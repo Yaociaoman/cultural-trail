@@ -50,7 +50,7 @@
             transition: background-color 0.5s, color 0.5s;
         }
 
-        /* START PAGE */
+        /* START / AUTH PAGE */
         #start-page {
             position: fixed; inset: 0; z-index: 9999;
             background: var(--whale-blue);
@@ -58,33 +58,49 @@
             background-image:
                 repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(255,255,255,0.03) 40px, rgba(255,255,255,0.03) 41px),
                 repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.03) 40px, rgba(255,255,255,0.03) 41px);
+            opacity: 1;
+            transition: opacity 0.5s ease;
         }
         #start-page::before { content:''; position:absolute; top:0; left:0; right:0; height:6px; background:repeating-linear-gradient(90deg, var(--stamp-gold) 0px 10px, transparent 10px 18px); }
         #start-page::after  { content:''; position:absolute; bottom:0; left:0; right:0; height:6px; background:repeating-linear-gradient(90deg, var(--stamp-gold) 0px 10px, transparent 10px 18px); }
-        .start-card { background:rgba(255,255,255,0.06); border:1px solid rgba(201,148,58,0.4); border-radius:8px; padding:3rem 3.5rem; text-align:center; max-width:440px; width:90%; backdrop-filter:blur(4px); }
-        .start-stamp { font-size:4rem; display:block; margin-bottom:1rem; }
-        .start-card h1 { font-family:'Playfair Display',serif; font-size:2rem; color:var(--paper-white); letter-spacing:0.06em; margin-bottom:0.3rem; }
-        .start-card .subtitle { font-size:0.8rem; color:var(--stamp-gold); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:2rem; font-style:italic; }
-        .dot-divider { height:3px; margin:1.5rem 0; border-radius:2px; background:repeating-linear-gradient(90deg, var(--stamp-gold) 0px 6px, transparent 6px 12px); }
-        .start-label { font-size:0.72rem; color:rgba(245,240,232,0.5); letter-spacing:0.1em; text-transform:uppercase; text-align:left; margin-bottom:0.4rem; }
-        .start-input { width:100%; padding:0.7rem 1rem; background:rgba(255,255,255,0.1); border:1px solid rgba(201,148,58,0.5); border-radius:4px; color:var(--paper-white); font-family:'Noto Serif TC',serif; font-size:0.9rem; outline:none; margin-bottom:1.2rem; transition:border-color 0.2s,background 0.2s; }
+        .start-card { background:rgba(255,255,255,0.06); border:1px solid rgba(201,148,58,0.4); border-radius:8px; padding:2.5rem 3rem; text-align:center; max-width:440px; width:90%; backdrop-filter:blur(4px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .start-stamp { font-size:3.5rem; display:block; margin-bottom:0.5rem; }
+        .start-card h1 { font-family:'Playfair Display',serif; font-size:1.8rem; color:var(--paper-white); letter-spacing:0.06em; margin-bottom:0.3rem; }
+        .start-card .subtitle { font-size:0.8rem; color:var(--stamp-gold); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:1.5rem; font-style:italic; }
+        .dot-divider { height:3px; margin:1.2rem 0; border-radius:2px; background:repeating-linear-gradient(90deg, var(--stamp-gold) 0px 6px, transparent 6px 12px); }
+        
+        .auth-toggle-group { display: flex; justify-content: center; gap: 1rem; margin-bottom: 1.2rem; }
+        .auth-toggle-btn { background: transparent; border: none; color: rgba(255,255,255,0.5); font-family: inherit; font-size: 0.9rem; cursor: pointer; padding: 0.2rem 0.5rem; transition: color 0.2s; }
+        .auth-toggle-btn.active { color: var(--stamp-gold); font-weight: 600; border-bottom: 2px solid var(--stamp-gold); }
+        
+        .form-group { text-align: left; margin-bottom: 0.9rem; }
+        .start-label { font-size:0.72rem; color:rgba(245,240,232,0.6); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:0.4rem; display: block; }
+        .start-input { width:100%; padding:0.65rem 0.9rem; background:rgba(255,255,255,0.1); border:1px solid rgba(201,148,58,0.5); border-radius:4px; color:var(--paper-white); font-family:'Noto Serif TC',serif; font-size:0.85rem; outline:none; transition:border-color 0.2s,background 0.2s; }
         .start-input::placeholder { color:rgba(255,255,255,0.3); }
         .start-input:focus { border-color:var(--stamp-gold); background:rgba(255,255,255,0.15); }
-        .start-btn { width:100%; padding:0.8rem; background:var(--brick-red); color:var(--paper-white); font-family:'Playfair Display',serif; font-size:1rem; letter-spacing:0.1em; border:none; border-radius:4px; cursor:pointer; transition:background 0.2s,transform 0.1s; }
+        
+        /* Password Strength Meter */
+        .strength-meter { height: 4px; background: rgba(255,255,255,0.1); margin-top: 0.4rem; border-radius: 2px; overflow: hidden; display: none; }
+        .strength-bar { height: 100%; width: 0%; transition: width 0.3s ease, background-color 0.3s ease; }
+        .strength-text { font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-top: 0.2rem; display: block; text-align: right; }
+
+        .auth-hint { font-size: 0.75rem; color: #ffdd6b; background: rgba(255,221,107,0.15); padding: 0.5rem; border-radius: 4px; margin-bottom: 1rem; display: none; animation: fadeIn 0.3s; }
+        .start-btn { width:100%; padding:0.8rem; background:var(--brick-red); color:var(--paper-white); font-family:'Noto Serif TC',serif; font-size:0.95rem; letter-spacing:0.1em; border:none; border-radius:4px; cursor:pointer; transition:background 0.2s,transform 0.1s; margin-top: 0.5rem; }
         .start-btn:hover { background:var(--brick-light); }
         .start-btn:active { transform:scale(0.98); }
         .start-note { font-size:0.68rem; color:rgba(245,240,232,0.35); margin-top:1rem; line-height:1.6; }
-        #start-page.fade-out { animation:fadeOut 0.6s ease forwards; }
-        @keyframes fadeOut { to { opacity:0; pointer-events:none; } }
+        #start-page.fade-out { opacity: 0; pointer-events: none; }
 
-        /* HEADER */
+        /* HEADER & SIGN OUT */
         header { background-color:var(--header-bg); color:var(--paper-white); padding:0.6rem 1rem 0.6rem 1.2rem; display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid var(--stamp-gold); flex-shrink:0; position:relative; transition:background-color 0.5s; }
         header::after { content:''; position:absolute; left:0; right:0; bottom:-6px; height:4px; background:repeating-linear-gradient(90deg, var(--stamp-gold) 0px 8px, transparent 8px 14px); }
         .header-left { display:flex; align-items:center; gap:0.8rem; }
         header h1 { font-family:'Playfair Display',serif; font-size:1.6rem; font-weight:700; letter-spacing:0.06em; }
         .header-sub { font-size:0.73rem; opacity:0.62; font-style:italic; }
-        .header-right { display:flex; align-items:center; gap:0.6rem; }
-        .header-user { font-size:0.75rem; color:var(--beige); }
+        .header-right { display:flex; align-items:center; gap:1rem; }
+        .header-user { font-size:0.8rem; color:var(--paper-white); font-weight: 600; }
+        .signout-btn { background: transparent; border: 1px solid var(--beige); color: var(--beige); padding: 0.25rem 0.6rem; font-family: inherit; font-size: 0.7rem; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .signout-btn:hover { background: var(--paper-white); color: var(--brick-red); border-color: var(--paper-white); }
         .theme-toggle { display:flex; align-items:center; gap:0.4rem; cursor:pointer; user-select:none; font-size:0.75rem; color:var(--beige); }
         .toggle-track { width:38px; height:20px; background:var(--seafoam); border-radius:10px; position:relative; transition:background 0.3s; }
         .toggle-thumb { position:absolute; top:2px; left:2px; width:16px; height:16px; background:var(--paper-white); border-radius:50%; transition:transform 0.3s; }
@@ -182,598 +198,118 @@
         #api-status { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); background:rgba(43,95,110,0.92); color:var(--paper-white); font-size:0.67rem; padding:4px 14px; border-radius:20px; pointer-events:none; opacity:0; transition:opacity 0.4s; z-index:800; white-space:nowrap; }
         #api-status.show { opacity:1; }
 
-        /* ══════════════════════════════════════════
-           STAMP PAGE
-        ══════════════════════════════════════════ */
+        /* STAMP PAGE */
         .stamp-page { flex:1; overflow-y:auto; background:var(--bg); padding:1.5rem 2rem; display:none; transition:background 0.5s; }
         .stamp-page.active { display:block; }
         .page-title { font-family:'Playfair Display',serif; font-size:1.35rem; color:var(--brick-red); text-align:center; margin-bottom:0.25rem; }
         .page-sub { font-size:0.75rem; text-align:center; color:var(--seafoam); font-style:italic; margin-bottom:1rem; }
 
-        /* ── Digital Passport Card (Vintage Boarding Pass Style) ── */
-        #passport-card {
-            width: 100%;
-            max-width: 640px;
-            margin: 0 auto 1.5rem;
-            background: #fcf6e8;
-            border: 2px solid #cfbfa8;
-            border-radius: 6px;
-            position: relative;
-            box-shadow: 0 4px 15px rgba(44, 36, 32, 0.08);
-        }
-        body.night #passport-card {
-            background: #25211c;
-            border-color: #54493f;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-
-        .passport-inner {
-            padding: 1.2rem 1.4rem;
-            position: relative;
-        }
-
-        /* Flight stamp / Barcode style decoration on top right */
-        .passport-deco-stamp {
-            position: absolute;
-            top: 0.8rem; right: 1.4rem;
-            border: 1.5px dashed var(--brick-light);
-            padding: 2px 6px;
-            font-family: 'Playfair Display', serif;
-            font-size: 0.55rem;
-            color: var(--brick-light);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            transform: rotate(3deg);
-            opacity: 0.6;
-            user-select: none;
-            pointer-events: none;
-        }
-
-        /* Ticket header row */
-        .passport-header {
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px dashed #cfbfa8;
-        }
+        /* Passport Card */
+        #passport-card { width: 100%; max-width: 640px; margin: 0 auto 1.5rem; background: #fcf6e8; border: 2px solid #cfbfa8; border-radius: 6px; position: relative; box-shadow: 0 4px 15px rgba(44, 36, 32, 0.08); }
+        body.night #passport-card { background: #25211c; border-color: #54493f; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .passport-inner { padding: 1.2rem 1.4rem; position: relative; }
+        .passport-deco-stamp { position: absolute; top: 0.8rem; right: 1.4rem; border: 1.5px dashed var(--brick-light); padding: 2px 6px; font-family: 'Playfair Display', serif; font-size: 0.55rem; color: var(--brick-light); text-transform: uppercase; letter-spacing: 0.1em; transform: rotate(3deg); opacity: 0.6; user-select: none; pointer-events: none; }
+        .passport-header { margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #cfbfa8; }
         body.night .passport-header { border-bottom-color: #54493f; }
-        
-        .passport-header .passport-issuer {
-            font-size: 0.55rem;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: var(--stamp-gold);
-            font-weight: 600;
-            display: block;
-            margin-bottom: 1px;
-        }
-        .passport-header .passport-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: var(--brick-red);
-            letter-spacing: 0.04em;
-        }
-
-        /* Ticket layout body */
-        .passport-body {
-            display: flex;
-            gap: 1.2rem;
-            align-items: center;
-        }
-
-        /* Left side: Stub-like user detail */
-        .passport-left {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.45rem;
-            min-width: 120px;
-            position: relative;
-        }
-        
-        /* Typography Stamp Avatar (No Emoji) */
-        .passport-avatar {
-            width: 54px;
-            height: 54px;
-            border-radius: 50%;
-            background: transparent;
-            color: var(--brick-red);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Playfair Display', 'Noto Serif TC', serif;
-            font-weight: 700;
-            font-size: 1.6rem;
-            border: 2px dashed var(--brick-red);
-            box-shadow: inset 0 0 0 3px rgba(158,42,28,0.05);
-            flex-shrink: 0;
-            text-transform: uppercase;
-        }
-        body.night .passport-avatar {
-            color: var(--brick-light);
-            border-color: var(--brick-light);
-        }
-        
-        .passport-name {
-            font-family: 'Noto Serif TC', serif;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--ink);
-            text-align: center;
-            max-width: 120px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .passport-header .passport-issuer { font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--stamp-gold); font-weight: 600; display: block; margin-bottom: 1px; }
+        .passport-header .passport-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; color: var(--brick-red); letter-spacing: 0.04em; }
+        .passport-body { display: flex; gap: 1.2rem; align-items: center; }
+        .passport-left { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; min-width: 120px; position: relative; }
+        .passport-avatar { width: 54px; height: 54px; border-radius: 50%; background: transparent; color: var(--brick-red); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', 'Noto Serif TC', serif; font-weight: 700; font-size: 1.6rem; border: 2px dashed var(--brick-red); box-shadow: inset 0 0 0 3px rgba(158,42,28,0.05); flex-shrink: 0; text-transform: uppercase; }
+        body.night .passport-avatar { color: var(--brick-light); border-color: var(--brick-light); }
+        .passport-name { font-family: 'Noto Serif TC', serif; font-weight: 600; font-size: 0.9rem; color: var(--ink); text-align: center; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         body.night .passport-name { color: var(--text); }
-        
-        .passport-role {
-            font-size: 0.58rem;
-            color: var(--seafoam);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        /* Ticket Progress bar */
-        .passport-progress-wrap {
-            margin-top: 0.3rem;
-            width: 100%;
-        }
-        .passport-progress-label {
-            font-size: 0.58rem;
-            color: var(--amber);
-            text-align: center;
-            margin-bottom: 3px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        .passport-progress-bar-bg {
-            width: 100%;
-            height: 5px;
-            background: rgba(44, 36, 32, 0.08);
-            border-radius: 2px;
-            overflow: hidden;
-        }
+        .passport-role { font-size: 0.58rem; color: var(--seafoam); letter-spacing: 0.08em; text-transform: uppercase; text-align: center; font-weight: 600; }
+        .passport-progress-wrap { margin-top: 0.3rem; width: 100%; }
+        .passport-progress-label { font-size: 0.58rem; color: var(--amber); text-align: center; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .passport-progress-bar-bg { width: 100%; height: 5px; background: rgba(44, 36, 32, 0.08); border-radius: 2px; overflow: hidden; }
         body.night .passport-progress-bar-bg { background: rgba(255,255,255,0.08); }
-        
-        .passport-progress-bar-fill {
-            height: 100%;
-            background: var(--brick-red);
-            transition: width 0.6s ease;
-            min-width: 2px;
-        }
+        .passport-progress-bar-fill { height: 100%; background: var(--brick-red); transition: width 0.6s ease; min-width: 2px; }
         body.night .passport-progress-bar-fill { background: var(--brick-light); }
-        
-        .passport-progress-text {
-            font-size: 0.55rem;
-            color: var(--text);
-            opacity: 0.65;
-            text-align: center;
-            margin-top: 4px;
-        }
-
-        /* Ticket Perforated Dotted Divider Line */
-        .passport-divider {
-            width: 1px;
-            align-self: stretch;
-            border-left: 2px dashed #cfbfa8;
-            position: relative;
-            flex-shrink: 0;
-        }
+        .passport-progress-text { font-size: 0.55rem; color: var(--text); opacity: 0.65; text-align: center; margin-top: 4px; }
+        .passport-divider { width: 1px; align-self: stretch; border-left: 2px dashed #cfbfa8; position: relative; flex-shrink: 0; }
         body.night .passport-divider { border-left-color: #54493f; }
-        
-        /* Ticket Cut Notches (Top and Bottom circles) */
-        .passport-divider::before {
-            content: ''; position: absolute;
-            width: 14px; height: 14px;
-            background: var(--bg);
-            border: 2px solid #cfbfa8;
-            border-radius: 50%;
-            top: -20px; left: -8px;
-            box-shadow: inset 0 -3px 5px rgba(0,0,0,0.02);
-            transition: background 0.5s;
-        }
-        .passport-divider::after {
-            content: ''; position: absolute;
-            width: 14px; height: 14px;
-            background: var(--bg);
-            border: 2px solid #cfbfa8;
-            border-radius: 50%;
-            bottom: -20px; left: -8px;
-            box-shadow: inset 0 3px 5px rgba(0,0,0,0.02);
-            transition: background 0.5s;
-        }
+        .passport-divider::before { content: ''; position: absolute; width: 14px; height: 14px; background: var(--bg); border: 2px solid #cfbfa8; border-radius: 50%; top: -20px; left: -8px; box-shadow: inset 0 -3px 5px rgba(0,0,0,0.02); transition: background 0.5s; }
+        .passport-divider::after { content: ''; position: absolute; width: 14px; height: 14px; background: var(--bg); border: 2px solid #cfbfa8; border-radius: 50%; bottom: -20px; left: -8px; box-shadow: inset 0 3px 5px rgba(0,0,0,0.02); transition: background 0.5s; }
         body.night .passport-divider::before, body.night .passport-divider::after { border-color: #54493f; }
-
-        /* Right: Vintage Achievements */
-        .passport-right {
-            flex: 1;
-            min-width: 0;
-            padding-left: 0.2rem;
-        }
-        .passport-right-title {
-            font-size: 0.6rem;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--stamp-gold);
-            margin-bottom: 0.8rem;
-            font-weight: 600;
-        }
-        #sdg-badges-wall {
-            display: flex;
-            gap: 1.1rem;
-            flex-wrap: wrap;
-            align-items: flex-start;
-        }
-
-        /* Vintage Engraved Badge Styles (No Emoji, No modern glow) */
-        .sdg-badge {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.45rem;
-            cursor: default;
-            position: relative;
-        }
-        .sdg-badge-circle {
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            border: 1.5px solid rgba(0,0,0,0.15);
-            transition: all 0.4s ease;
-            position: relative;
-        }
+        .passport-right { flex: 1; min-width: 0; padding-left: 0.2rem; }
+        .passport-right-title { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--stamp-gold); margin-bottom: 0.8rem; font-weight: 600; }
+        #sdg-badges-wall { display: flex; gap: 1.1rem; flex-wrap: wrap; align-items: flex-start; }
         
-        /* Custom geometric/engraved badge graphic centers instead of Emojis */
-        .sdg-badge-circle::before {
-            content: '';
-            position: absolute;
-            inset: 4px;
-            border: 1px double rgba(0,0,0,0.1);
-            border-radius: 50%;
-        }
-        
-        /* Central design configurations using standard typographic typography symbols */
-        .sdg-badge .sdg-symbol {
-            font-family: 'Playfair Display', Georgia, serif;
-            font-size: 1.1rem;
-            font-weight: 700;
-            line-height: 1;
-            z-index: 2;
-        }
-        
-        .sdg-badge-circle .sdg-num {
-            font-family: 'Playfair Display', serif;
-            font-size: 0.5rem;
-            letter-spacing: 0.02em;
-            font-weight: 600;
-            margin-top: 1px;
-            z-index: 2;
-            opacity: 0.8;
-        }
-        .sdg-badge-label {
-            font-size: 0.55rem;
-            text-align: center;
-            max-width: 72px;
-            line-height: 1.3;
-            letter-spacing: 0.01em;
-            color: var(--text);
-            opacity: 0.5;
-        }
-
-        /* Locked State: Intaglio debossed imprint */
-        .sdg-badge.locked .sdg-badge-circle {
-            background: transparent;
-            border: 1.5px dashed rgba(44,36,32,0.18);
-            color: rgba(44,36,32,0.25);
-        }
-        body.night .sdg-badge.locked .sdg-badge-circle {
-            border-color: rgba(255,255,255,0.15);
-            color: rgba(255,255,255,0.2);
-        }
+        /* Badges */
+        .sdg-badge { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; cursor: default; position: relative; }
+        .sdg-badge-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-direction: column; border: 1.5px solid rgba(0,0,0,0.15); transition: all 0.4s ease; position: relative; }
+        .sdg-badge-circle::before { content: ''; position: absolute; inset: 4px; border: 1px double rgba(0,0,0,0.1); border-radius: 50%; }
+        .sdg-badge .sdg-symbol { font-family: 'Playfair Display', Georgia, serif; font-size: 1.1rem; font-weight: 700; line-height: 1; z-index: 2; }
+        .sdg-badge-circle .sdg-num { font-family: 'Playfair Display', serif; font-size: 0.5rem; letter-spacing: 0.02em; font-weight: 600; margin-top: 1px; z-index: 2; opacity: 0.8; }
+        .sdg-badge-label { font-size: 0.55rem; text-align: center; max-width: 72px; line-height: 1.3; letter-spacing: 0.01em; color: var(--text); opacity: 0.5; }
+        .sdg-badge.locked .sdg-badge-circle { background: transparent; border: 1.5px dashed rgba(44,36,32,0.18); color: rgba(44,36,32,0.25); }
+        body.night .sdg-badge.locked .sdg-badge-circle { border-color: rgba(255,255,255,0.15); color: rgba(255,255,255,0.2); }
         .sdg-badge.locked .sdg-badge-circle::before { display: none; }
+        .sdg-badge.unlocked .sdg-badge-circle { background: #ffffff; border-color: var(--badge-color); color: var(--badge-color); box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 3px var(--badge-color); }
+        body.night .sdg-badge.unlocked .sdg-badge-circle { background: #2a251f; box-shadow: inset 0 0 0 2px #2a251f, inset 0 0 0 3px var(--badge-color); }
+        .sdg-badge.unlocked .sdg-badge-circle::before { border-color: var(--badge-color); opacity: 0.3; }
+        .sdg-badge.unlocked .sdg-badge-label { opacity: 0.9; font-weight: 600; }
 
-        /* Unlocked State: Letterpress vintage ink stamp style (No glow) */
-        .sdg-badge.unlocked .sdg-badge-circle {
-            background: #ffffff;
-            border-color: var(--badge-color);
-            color: var(--badge-color);
-            box-shadow: inset 0 0 0 2px #ffffff, inset 0 0 0 3px var(--badge-color);
-        }
-        body.night .sdg-badge.unlocked .sdg-badge-circle {
-            background: #2a251f;
-            box-shadow: inset 0 0 0 2px #2a251f, inset 0 0 0 3px var(--badge-color);
-        }
-        .sdg-badge.unlocked .sdg-badge-circle::before {
-            border-color: var(--badge-color);
-            opacity: 0.3;
-        }
-        .sdg-badge.unlocked .sdg-badge-label {
-            opacity: 0.9;
-            font-weight: 600;
-        }
-
-        /* Animation */
-        @keyframes badgeUnlock {
-            0%   { transform: scale(0.6); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .sdg-badge.just-unlocked .sdg-badge-circle {
-            animation: badgeUnlock 0.5s ease-out forwards;
-        }
+        @keyframes badgeUnlock { 0% { transform: scale(0.6); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .sdg-badge.just-unlocked .sdg-badge-circle { animation: badgeUnlock 0.5s ease-out forwards; }
 
         /* Tooltip */
-        .sdg-badge[data-tip]:hover::after {
-            content: attr(data-tip);
-            position: absolute;
-            bottom: calc(100% + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--ink);
-            color: var(--paper-white);
-            font-size: 0.62rem;
-            line-height: 1.5;
-            padding: 0.45rem 0.65rem;
-            border-radius: 5px;
-            white-space: normal;
-            width: 180px;
-            text-align: center;
-            pointer-events: none;
-            z-index: 100;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-            filter: none !important;
-        }
-        .sdg-badge[data-tip]:hover::before {
-            content: ''; position: absolute;
-            bottom: calc(100% + 2px); left: 50%;
-            transform: translateX(-50%);
-            border: 5px solid transparent;
-            border-top-color: var(--ink);
-            pointer-events: none;
-            z-index: 100;
-        }
-
-        /* Ticket footer export block */
-        .passport-export-row {
-            display: flex;
-            justify-content: center;
-            margin-top: 1rem;
-            padding-top: 0.8rem;
-            border-top: 1px dashed #cfbfa8;
-        }
+        .sdg-badge[data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--paper-white); font-size: 0.62rem; line-height: 1.5; padding: 0.45rem 0.65rem; border-radius: 5px; white-space: normal; width: 180px; text-align: center; pointer-events: none; z-index: 100; box-shadow: 0 4px 16px rgba(0,0,0,0.18); filter: none !important; }
+        .sdg-badge[data-tip]:hover::before { content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--ink); pointer-events: none; z-index: 100; }
+        .passport-export-row { display: flex; justify-content: center; margin-top: 1rem; padding-top: 0.8rem; border-top: 1px dashed #cfbfa8; }
         body.night .passport-export-row { border-top-color: #54493f; }
-        
-        .passport-export-btn {
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            padding: 0.5rem 1.4rem;
-            background: transparent;
-            color: var(--brick-red);
-            border: 1.5px solid var(--brick-red);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        body.night .passport-export-btn {
-            color: var(--text);
-            border-color: #cfbfa8;
-        }
-        .passport-export-btn:hover {
-            background: var(--brick-red);
-            color: white;
-        }
-        body.night .passport-export-btn:hover {
-            background: #cfbfa8;
-            color: #231e18;
-        }
+        .passport-export-btn { font-family: 'Noto Serif TC', serif; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; padding: 0.5rem 1.4rem; background: transparent; color: var(--brick-red); border: 1.5px solid var(--brick-red); border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        body.night .passport-export-btn { color: var(--text); border-color: #cfbfa8; }
+        .passport-export-btn:hover { background: var(--brick-red); color: white; }
+        body.night .passport-export-btn:hover { background: #cfbfa8; color: #231e18; }
         .passport-export-btn:active { transform: scale(0.98); }
 
-        /* ── Upload bar ── */
-        .upload-bar {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: var(--panel-bg);
-            border: 1.5px dashed var(--beige);
-            border-radius: 8px;
-            padding: 0.75rem 1.1rem;
-            margin-bottom: 1rem;
-            cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
-        }
+        /* Upload bar */
+        .upload-bar { display: flex; align-items: center; gap: 0.75rem; background: var(--panel-bg); border: 1.5px dashed var(--beige); border-radius: 8px; padding: 0.75rem 1.1rem; margin-bottom: 1rem; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
         .upload-bar:hover { border-color: var(--stamp-gold); background: rgba(201,148,58,0.05); }
         .upload-bar-icon { font-size: 1.5rem; flex-shrink: 0; }
         .upload-bar-text { flex: 1; }
         .upload-bar-text strong { display: block; font-size: 0.8rem; color: var(--text); }
         .upload-bar-text small { font-size: 0.68rem; color: var(--seafoam); }
-        .upload-bar-btn {
-            padding: 0.42rem 1rem;
-            background: var(--brick-red);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.73rem;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background 0.2s;
-            flex-shrink: 0;
-        }
+        .upload-bar-btn { padding: 0.42rem 1rem; background: var(--brick-red); color: white; border: none; border-radius: 4px; font-family: 'Noto Serif TC', serif; font-size: 0.73rem; cursor: pointer; white-space: nowrap; transition: background 0.2s; flex-shrink: 0; }
         .upload-bar-btn:hover { background: var(--brick-light); }
-
-        .geo-badge {
-            display: inline-flex;
-            align-items: center;
-            background: var(--seafoam);
-            color: white;
-            font-size: 0.62rem;
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-top: 0.4rem;
-            letter-spacing: 0.04em;
-            font-style: normal;
-        }
+        .geo-badge { display: inline-flex; align-items: center; background: var(--seafoam); color: white; font-size: 0.62rem; padding: 2px 8px; border-radius: 20px; margin-top: 0.4rem; letter-spacing: 0.04em; font-style: normal; }
 
         #upload-toast { margin:0 auto 1rem; max-width:100%; padding:0.7rem 1rem; border-radius:6px; font-size:0.78rem; text-align:center; display:none; line-height:1.5; }
         #upload-toast.success { background:#e8f5e4; color:#2e7d32; border:1px solid #a5d6a7; display:block; }
         #upload-toast.error   { background:#fdecea; color:#c62828; border:1px solid #ef9a9a; display:block; }
         #upload-toast.info    { background:#e3f2fd; color:#1565c0; border:1px solid #90caf9; display:block; }
 
-        .manual-select-wrap {
-            margin-top: 0.8rem;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-        .manual-select-wrap select {
-            padding: 0.4rem 0.65rem;
-            border: 1px solid #ef9a9a;
-            border-radius: 4px;
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.76rem;
-            background: white;
-            color: #c62828;
-            cursor: pointer;
-            outline: none;
-        }
-        .manual-confirm-btn {
-            padding: 0.4rem 1rem;
-            background: var(--brick-red);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.76rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
+        .manual-select-wrap { margin-top: 0.8rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem; }
+        .manual-select-wrap select { padding: 0.4rem 0.65rem; border: 1px solid #ef9a9a; border-radius: 4px; font-family: 'Noto Serif TC', serif; font-size: 0.76rem; background: white; color: #c62828; cursor: pointer; outline: none; }
+        .manual-confirm-btn { padding: 0.4rem 1rem; background: var(--brick-red); color: white; border: none; border-radius: 4px; font-family: 'Noto Serif TC', serif; font-size: 0.76rem; cursor: pointer; transition: background 0.2s; }
         .manual-confirm-btn:hover { background: var(--brick-light); }
 
-        /* ── Stamp category tabs ── */
-        .stamp-tabs {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-        .stamp-tab {
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.75rem;
-            letter-spacing: 0.08em;
-            padding: 0.4rem 1.1rem;
-            border: 1.5px solid var(--beige);
-            border-radius: 20px;
-            background: transparent;
-            color: var(--text);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+        /* Tabs */
+        .stamp-tabs { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .stamp-tab { font-family: 'Noto Serif TC', serif; font-size: 0.75rem; letter-spacing: 0.08em; padding: 0.4rem 1.1rem; border: 1.5px solid var(--beige); border-radius: 20px; background: transparent; color: var(--text); cursor: pointer; transition: all 0.2s; }
         .stamp-tab:hover { border-color: var(--stamp-gold); color: var(--brick-red); }
-        .stamp-tab.active {
-            background: var(--brick-red);
-            border-color: var(--brick-red);
-            color: white;
-        }
+        .stamp-tab.active { background: var(--brick-red); border-color: var(--brick-red); color: white; }
 
-        /* ── Stamp grid ── */
+        /* Stamp Grid */
         .stamp-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(118px,1fr)); gap:1.4rem; }
         .stamp-item { display:flex; flex-direction:column; align-items:center; gap:0.5rem; text-align:center; }
-
-        .stamp-piece {
-            position: relative;
-            width: 90px;
-            height: 108px;
-            flex-shrink: 0;
-            background-color: #faf6ef;
-            border-radius: 2px;
-            filter: drop-shadow(0 3px 10px rgba(0,0,0,0.18));
-            -webkit-mask-image:
-                radial-gradient(circle at   0%   0%, transparent 6px, white 6px),
-                radial-gradient(circle at 100%   0%, transparent 6px, white 6px),
-                radial-gradient(circle at   0% 100%, transparent 6px, white 6px),
-                radial-gradient(circle at 100% 100%, transparent 6px, white 6px),
-                radial-gradient(circle at  50%   0%, transparent 5px, white 5px),
-                radial-gradient(circle at  50% 100%, transparent 5px, white 5px),
-                radial-gradient(circle at   0%  50%, transparent 5px, white 5px),
-                radial-gradient(circle at 100%  50%, transparent 5px, white 5px),
-                radial-gradient(circle at  25%   0%, transparent 5px, white 5px),
-                radial-gradient(circle at  75%   0%, transparent 5px, white 5px),
-                radial-gradient(circle at  25% 100%, transparent 5px, white 5px),
-                radial-gradient(circle at  75% 100%, transparent 5px, white 5px),
-                radial-gradient(circle at   0%  25%, transparent 5px, white 5px),
-                radial-gradient(circle at   0%  75%, transparent 5px, white 5px),
-                radial-gradient(circle at 100%  25%, transparent 5px, white 5px),
-                radial-gradient(circle at 100%  75%, transparent 5px, white 5px),
-                linear-gradient(white, white);
-            -webkit-mask-composite: destination-out;
-            mask-composite: exclude;
-            transition: transform 0.2s;
-        }
-
+        .stamp-piece { position: relative; width: 90px; height: 108px; flex-shrink: 0; background-color: #faf6ef; border-radius: 2px; filter: drop-shadow(0 3px 10px rgba(0,0,0,0.18)); -webkit-mask-image: radial-gradient(circle at 0% 0%, transparent 6px, white 6px), radial-gradient(circle at 100% 0%, transparent 6px, white 6px), radial-gradient(circle at 0% 100%, transparent 6px, white 6px), radial-gradient(circle at 100% 100%, transparent 6px, white 6px), radial-gradient(circle at 50% 0%, transparent 5px, white 5px), radial-gradient(circle at 50% 100%, transparent 5px, white 5px), radial-gradient(circle at 0% 50%, transparent 5px, white 5px), radial-gradient(circle at 100% 50%, transparent 5px, white 5px), radial-gradient(circle at 25% 0%, transparent 5px, white 5px), radial-gradient(circle at 75% 0%, transparent 5px, white 5px), radial-gradient(circle at 25% 100%, transparent 5px, white 5px), radial-gradient(circle at 75% 100%, transparent 5px, white 5px), radial-gradient(circle at 0% 25%, transparent 5px, white 5px), radial-gradient(circle at 0% 75%, transparent 5px, white 5px), radial-gradient(circle at 100% 25%, transparent 5px, white 5px), radial-gradient(circle at 100% 75%, transparent 5px, white 5px), linear-gradient(white, white); -webkit-mask-composite: destination-out; mask-composite: exclude; transition: transform 0.2s; }
         .stamp-piece.locked { background-color: #f0ece4; }
         .stamp-item.locked-item { filter: grayscale(100%); }
-
-        .stamp-img-box {
-            position: absolute;
-            top: 12px;
-            left: 8px;
-            right: 8px;
-            bottom: 12px;
-            background: white;
-            border-radius: 2px;
-            border: 1.5px solid rgba(0,0,0,0.07);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .stamp-img-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .stamp-img-box.locked-box {
-            background: rgba(0,0,0,0.04);
-            border-color: rgba(0,0,0,0.07);
-        }
-        .stamp-img-box.empty-box {
-            background: rgba(0,0,0,0.03);
-        }
-
-        .stamp-bar-top {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 6px;
-        }
-        .stamp-bar-bot {
-            position: absolute;
-            bottom: 0; left: 0; right: 0;
-            height: 6px;
-        }
-
+        .stamp-img-box { position: absolute; top: 12px; left: 8px; right: 8px; bottom: 12px; background: white; border-radius: 2px; border: 1.5px solid rgba(0,0,0,0.07); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .stamp-img-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .stamp-img-box.locked-box { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.07); }
+        .stamp-img-box.empty-box { background: rgba(0,0,0,0.03); }
+        .stamp-bar-top { position: absolute; top: 0; left: 0; right: 0; height: 6px; }
+        .stamp-bar-bot { position: absolute; bottom: 0; left: 0; right: 0; height: 6px; }
         .stamp-item:not(.locked-item) .stamp-piece { cursor: pointer; }
         .stamp-item:not(.locked-item) .stamp-piece:hover { transform: scale(1.07) rotate(-1deg); }
         .stamp-item.locked-item .stamp-piece { cursor: default; }
 
-        @keyframes stampIn {
-            0%   { transform: scale(0.3) rotate(-20deg); opacity: 0; }
-            70%  { transform: scale(1.15) rotate(3deg); }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-        }
+        @keyframes stampIn { 0% { transform: scale(0.3) rotate(-20deg); opacity: 0; } 70% { transform: scale(1.15) rotate(3deg); } 100% { transform: scale(1) rotate(0deg); opacity: 1; } }
         .stamp-piece.just-unlocked { animation: stampIn 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-
         .stamp-name   { font-size:0.67rem; font-weight:600; color:var(--text); }
         .stamp-status { font-size:0.59rem; color:var(--seafoam); }
         .stamp-status.unlocked { color:var(--deep-orange); }
@@ -786,59 +322,14 @@
         #lightbox-close { position:absolute; top:1rem; right:1.2rem; background:rgba(255,255,255,0.15); border:none; color:white; width:32px; height:32px; border-radius:50%; font-size:1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 
         /* SDG Fact Modal */
-        #sdg-modal {
-            position: fixed;
-            inset: 0;
-            z-index: 9500;
-            background: rgba(0,0,0,0.6);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem;
-        }
+        #sdg-modal { position: fixed; inset: 0; z-index: 9500; background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center; padding: 1rem; }
         #sdg-modal.open { display: flex; }
-        .sdg-modal-card {
-            background: var(--panel-bg);
-            border: 2px solid var(--stamp-gold);
-            border-radius: 10px;
-            max-width: 420px;
-            width: 100%;
-            padding: 2rem;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-            position: relative;
-        }
-        @keyframes modalIn {
-            from { transform: scale(0.7) translateY(30px); opacity: 0; }
-            to   { transform: scale(1) translateY(0); opacity: 1; }
-        }
+        .sdg-modal-card { background: var(--panel-bg); border: 2px solid var(--stamp-gold); border-radius: 10px; max-width: 420px; width: 100%; padding: 2rem; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1); position: relative; }
+        @keyframes modalIn { from { transform: scale(0.7) translateY(30px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
         .sdg-modal-icon { font-size: 2.5rem; display: block; margin-bottom: 0.7rem; font-family: 'Playfair Display', serif; font-weight: bold; }
-        .sdg-modal-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--brick-red);
-            margin-bottom: 0.9rem;
-        }
-        .sdg-modal-fact {
-            font-size: 0.82rem;
-            line-height: 1.8;
-            color: var(--text);
-            font-style: italic;
-            margin-bottom: 1.2rem;
-        }
-        .sdg-modal-close {
-            padding: 0.55rem 1.5rem;
-            background: var(--brick-red);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
+        .sdg-modal-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: bold; color: var(--brick-red); margin-bottom: 0.9rem; }
+        .sdg-modal-fact { font-size: 0.82rem; line-height: 1.8; color: var(--text); font-style: italic; margin-bottom: 1.2rem; }
+        .sdg-modal-close { padding: 0.55rem 1.5rem; background: var(--brick-red); color: white; border: none; border-radius: 4px; font-family: 'Noto Serif TC', serif; font-size: 0.8rem; cursor: pointer; transition: background 0.2s; }
         .sdg-modal-close:hover { background: var(--brick-light); }
 
         /* Leaflet popup */
@@ -852,7 +343,6 @@
         ::-webkit-scrollbar-track { background:transparent; }
         ::-webkit-scrollbar-thumb { background:var(--beige); border-radius:2px; }
 
-        /* Responsive passport card */
         @media (max-width: 540px) {
             .passport-body { flex-direction: column; gap: 1.5rem; }
             .passport-left { flex-direction: row; align-items: center; min-width: unset; width: 100%; justify-content: space-around; gap: 1rem; }
@@ -861,6 +351,7 @@
             .passport-divider::after { bottom: -8px; left: unset; right: -20px; }
             #sdg-badges-wall { justify-content: space-around; }
         }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -871,10 +362,35 @@
         <h1>Taiwan Cultural Trails</h1>
         <p class="subtitle">Beneficial & Sustainable Tourism</p>
         <div class="dot-divider"></div>
-        <p class="start-label">你的名字 / Your Name</p>
-        <input class="start-input" id="username-input" type="text" placeholder="輸入你的名字開始旅程…" maxlength="20">
-        <button class="start-btn" onclick="enterApp()">開始探索 · Begin Journey</button>
-        <p class="start-note">名字只儲存在你的瀏覽器，不會上傳任何伺服器。</p>
+        
+        <div class="auth-toggle-group">
+            <button id="toggle-login" class="auth-toggle-btn active" onclick="setAuthMode('login')">Sign In / 登入</button>
+            <button id="toggle-register" class="auth-toggle-btn" onclick="setAuthMode('register')">Register / 註冊</button>
+        </div>
+
+        <div id="auth-hint" class="auth-hint"></div>
+
+        <div class="form-group" id="name-group" style="display: none;">
+            <label class="start-label">使用者名稱 / User Name</label>
+            <input class="start-input" id="username-input" type="text" placeholder="請輸入您在旅行護照上顯示的名稱" maxlength="20">
+        </div>
+
+        <div class="form-group">
+            <label class="start-label">電子信箱 / Email Account</label>
+            <input class="start-input" id="email-input" type="email" placeholder="example@mail.com" oninput="checkEmailExists()">
+        </div>
+
+        <div class="form-group">
+            <label class="start-label">密碼 / Password</label>
+            <input class="start-input" id="password-input" type="password" placeholder="輸入密碼..." oninput="evaluatePasswordStrength()">
+            <div class="strength-meter" id="strength-meter">
+                <div class="strength-bar" id="strength-bar"></div>
+            </div>
+            <small class="strength-text" id="strength-text" style="display: none;"></small>
+        </div>
+
+        <button class="start-btn" id="submit-auth-btn" onclick="handleAuthSubmit()">Begin Journey / 開始探索</button>
+        <p class="start-note">所有帳號與旅程進度皆安全儲存於您的瀏覽器本地空間。</p>
     </div>
 </div>
 
@@ -887,6 +403,7 @@
     </div>
     <div class="header-right">
         <span class="header-user" id="header-user"></span>
+        <button class="signout-btn" onclick="handleSignOut()">Sign Out</button>
         <label class="theme-toggle" id="themeToggle" title="Day/Night">
             ☼
             <div class="toggle-track"><div class="toggle-thumb"></div></div>
@@ -901,10 +418,8 @@
 </div>
 
 <div class="map-layout" id="mapLayout">
-
     <div id="sidebar" class="collapsed">
         <button id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">‹</button>
-
         <div class="sidebar-section">
             <h3>Search</h3>
             <div class="search-wrap">
@@ -912,12 +427,10 @@
                 <input type="text" id="searchInput" placeholder="搜尋名稱、地址或 ID…">
             </div>
         </div>
-
         <div class="sidebar-section">
             <h3>Filter by Category</h3>
             <div class="filter" id="filterContainer"></div>
         </div>
-
         <div class="sidebar-section" style="padding-bottom:0.4rem;border-bottom:none;">
             <h3>Locations <span id="loc-count" style="opacity:0.5;font-weight:normal"></span></h3>
         </div>
@@ -950,7 +463,6 @@
 </div>
 
 <div class="stamp-page" id="stampPage">
-
     <div class="page-title">Stamp Collection</div>
     <p class="page-sub">Visit each location in person and upload a photo to unlock your stamp.</p>
 
@@ -961,7 +473,6 @@
                 <span class="passport-issuer">Taiwan Cultural Trails · OAuth Boarding Pass</span>
                 <div class="passport-title">BOARDING PASS · 永續文化通行證</div>
             </div>
-
             <div class="passport-body">
                 <div class="passport-left">
                     <div class="passport-avatar" id="passport-avatar">T</div>
@@ -975,16 +486,12 @@
                         <div class="passport-progress-text" id="progress-text">Progress: 0 / 0 (0%)</div>
                     </div>
                 </div>
-
                 <div class="passport-divider"></div>
-
                 <div class="passport-right">
                     <div class="passport-right-title">Imprinted Achievements</div>
-                    <div id="sdg-badges-wall">
-                        </div>
+                    <div id="sdg-badges-wall"></div>
                 </div>
             </div>
-
             <div class="passport-export-row">
                 <button class="passport-export-btn" onclick="exportPassport()">📥 Export Boarding Pass</button>
             </div>
@@ -1024,220 +531,239 @@
 
 <script>
 /* ══════════════════════════════════════════════════
-   TDX API credentials
+   TDX API credentials & Configs
 ══════════════════════════════════════════════════ */
-const TDX_CLIENT_ID     = '' //'';
-const TDX_CLIENT_SECRET = '' //'';
+const TDX_CLIENT_ID     = ''; 
+const TDX_CLIENT_SECRET = ''; 
 
-/* ══════════════════════════════════════════════════
-   Data source config
-══════════════════════════════════════════════════ */
 const TDX_SOURCES = [
-    {
-        id: 'scenic', name: 'Tourist attractions',
-        endpoint: 'https://tdx.transportdata.tw/api/basic/v2/Tourism/ScenicSpot?$top=600&$format=JSON',
-        nameField: 'ScenicSpotName',
-        icon: 'S', color: '#c96b1a',
-    },
-    {
-        id: 'restaurant', name: 'Tourist restaurant',
-        endpoint: 'https://tdx.transportdata.tw/api/basic/v2/Tourism/Restaurant?$top=200&$format=JSON',
-        nameField: 'RestaurantName',
-        icon: 'R', color: '#2b8c6e',
-    },
-    {
-        id: 'activity', name: 'Cultural and creative activities',
-        endpoint: 'https://tdx.transportdata.tw/api/basic/v2/Tourism/Activity?$top=150&$format=JSON',
-        nameField: 'ActivityName',
-        icon: 'A', color: '#9e2a1c',
-    },
+    { id: 'scenic', name: 'Tourist attractions', endpoint: 'https://tdx.transportdata.tw/api/basic/v2/Tourism/ScenicSpot?$top=600&$format=JSON', nameField: 'ScenicSpotName', icon: 'S', color: '#c96b1a' },
+    { id: 'restaurant', name: 'Tourist restaurant', endpoint: 'https://tdx.transportdata.tw/api/basic/v2/Tourism/Restaurant?$top=200&$format=JSON', nameField: 'RestaurantName', icon: 'R', color: '#2b8c6e' },
+    { id: 'activity', name: 'Cultural and creative activities', endpoint: 'https://tdx.transportdata.tw/api/basic/v2/Tourism/Activity?$top=150&$format=JSON', nameField: 'ActivityName', icon: 'A', color: '#9e2a1c' }
 ];
 
-/* ══════════════════════════════════════════════════
-   Seed data (fallback)
-══════════════════════════════════════════════════ */
 const SEED_LOCATIONS = [
-    {
-        id:'huashan', name:'華山1914文創園區', category:'Cultural and creative activities', icon:'A', color:'#9e2a1c',
-        lat:25.0441, lng:121.5298, addr:'台北市中正區八德路一段1號',
-        desc:'前身為台灣總督府專賣局台北酒廠，1999年轉型為文化創意產業園區。現為台灣最重要的文創展演場地之一，聚集設計師品牌、藝廊、表演場館與特色餐廳。',
-        officialUrl:'https://www.huashan1914.com/',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=華山1914文創園區+台北市中正區八德路一段1號'
-    },
-    {
-        id:'jiufen', name:'九份老街', category:'Tourist attractions', icon:'S', color:'#c96b1a',
-        lat:25.1094, lng:121.8441, addr:'新北市瑞芳區九份',
-        desc:'昔日淘金小鎮，紅燈籠、茶樓與蜿蜒石階構成台灣最具代表性的山城意象。傍晚的燈火映照著基隆山與海灣，是許多遊客心目中台灣最美的夜景之一。',
-        officialUrl:'https://www.travel.taipei/zh-tw/attraction/details/35',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=九份老街+新北市瑞芳區'
-    },
-    {
-        id:'taroko', name:'太魯閣國家公園', category:'Tourist attractions', icon:'S', color:'#c96b1a',
-        lat:24.1573, lng:121.6210, addr:'花蓮縣秀林鄉',
-        desc:'大理石峽谷地形與立霧溪共同塑造的壯闊景觀，也是太魯閣族（Truku）世代居住的土地。園區內設有原住民文化展示，介紹編織、狩獵與祭典傳承。',
-        officialUrl:'https://www.taroko.gov.tw/',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=太魯閣國家公園+花蓮縣秀林鄉'
-    },
-    {
-        id:'songshan', name:'松山文創園區', category:'Cultural and creative activities', icon:'A', color:'#9e2a1c',
-        lat:25.0427, lng:121.5600, addr:'台北市信義區光復南路133號',
-        desc:'前身為日治時期松山菸草工廠，現為台灣最大的文創設計基地。每年舉辦台灣設計展、文博會等大型文化活動，保留完整的歷史廠房建築。',
-        officialUrl:'https://www.songshanculturalpark.org/',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=松山文創園區+台北市信義區光復南路133號'
-    },
-    {
-        id:'anping', name:'台南安平古堡', category:'Tourist attractions', icon:'S', color:'#c96b1a',
-        lat:22.9966, lng:120.1610, addr:'台南市安平區國勝路82號',
-        desc:'1624年荷蘭東印度公司興建，是台灣最古老的城堡遺址。古堡旁的老街保存著傳統劍獅工藝、蜜餞文化與百年老店，是台南文史探索的必訪地點。',
-        officialUrl:'https://culture.tainan.gov.tw/',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=安平古堡+台南市安平區國勝路82號'
-    },
-    {
-        id:'shenkeng', name:'深坑老街', category:'Tourist attractions', icon:'S', color:'#c96b1a',
-        lat:25.0021, lng:121.6183, addr:'新北市深坑區北深路三段',
-        desc:'以臭豆腐聞名，同時也是台北近郊保存完整的清代閩南式街屋聚落。在地工藝師在此製作竹編、豆腐文創商品，呈現農村生活與在地飲食文化。',
-        officialUrl:'https://www.shenkeng.ntpc.gov.tw/',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=深坑老街+新北市深坑區北深路三段'
-    },
-    {
-        id:'lukang', name:'鹿港老街', category:'Tourist attractions', icon:'S', color:'#c96b1a',
-        lat:24.0520, lng:120.4365, addr:'彰化縣鹿港鎮中山路',
-        desc:'保存最完整的清代街道格局，擁有天后宮、龍山寺等古廟，是台灣民俗工藝的重要聚集地。',
-        officialUrl:'https://lukang.cca.gov.tw/',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=鹿港老街+彰化縣鹿港鎮中山路'
-    },
-    {
-        id:'hayashi', name:'台南林百貨', category:'Tourist attractions', icon:'S', color:'#c96b1a',
-        lat:22.9969, lng:120.2016, addr:'台南市中西區忠義路二段63號',
-        desc:'1932年開幕的昭和時代百貨公司，修復後成為文創空間，頂樓保留日治時期防空砲台。',
-        officialUrl:'https://hayashi.com.tw/',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=林百貨+台南市中西區忠義路二段63號'
-    },
-    {
-        id:'shilin', name:'士林夜市', category:'Tourist restaurant', icon:'R', color:'#2b8c6e',
-        lat:25.0883, lng:121.5237, addr:'台北市士林區基河路',
-        desc:'台灣規模最大的觀光夜市，以蚵仔煎、大餅包小餅、豪大大雞排等小吃聞名，是外國旅客體驗台灣夜市文化的首選。',
-        officialUrl:'https://www.travel.taipei/zh-tw/attraction/details/1',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=士林夜市+台北市士林區基河路'
-    },
-    {
-        id:'suao', name:'蘇澳冷泉', category:'Tourist attractions', icon:'S', color:'#c96b1a',
-        lat:24.5965, lng:121.8609, addr:'宜蘭縣蘇澳鎮冷泉路',
-        desc:'全球少見的碳酸冷泉，水溫常年維持在22°C，泡湯後皮膚光滑細緻，是宜蘭最具特色的自然景觀。',
-        officialUrl:'https://www.tourism.gov.tw/',
-        mapUrl:'https://www.google.com/maps/search/?api=1&query=蘇澳冷泉+宜蘭縣蘇澳鎮冷泉路'
-    },
+    { id:'huashan', name:'華山1914文創園區', category:'Cultural and creative activities', icon:'A', color:'#9e2a1c', lat:25.0441, lng:121.5298, addr:'台北市中正區八德路一段1號', desc:'前身為台灣總督府專賣局台北酒廠，1999年轉型為文化創意產業園區。現為台灣最重要的文創展演場地之一。', officialUrl:'https://www.huashan1914.com/', mapUrl:'https://www.google.com/maps/search/?api=1&query=華山1914文創園區+台北市中正區八德路一段1號' },
+    { id:'jiufen', name:'九份老街', category:'Tourist attractions', icon:'S', color:'#c96b1a', lat:25.1094, lng:121.8441, addr:'新北市瑞芳區九份', desc:'昔日淘金小鎮，紅燈籠、茶樓與蜿蜒石階構成台灣最具代表性的山城意象。', officialUrl:'https://www.travel.taipei/zh-tw/attraction/details/35', mapUrl:'https://www.google.com/maps/search/?api=1&query=九份老街+新北市瑞芳區' },
+    { id:'taroko', name:'太魯閣國家公園', category:'Tourist attractions', icon:'S', color:'#c96b1a', lat:24.1573, lng:121.6210, addr:'花蓮縣秀林鄉', desc:'大理石峽谷地形與立霧溪共同塑造的壯闊景觀，也是太魯閣族世代居住的土地。', officialUrl:'https://www.taroko.gov.tw/', mapUrl:'https://www.google.com/maps/search/?api=1&query=太魯閣國家公園+花蓮縣秀林鄉' },
+    { id:'songshan', name:'松山文創園區', category:'Cultural and creative activities', icon:'A', color:'#9e2a1c', lat:25.0427, lng:121.5600, addr:'台北市信義區光復南路133號', desc:'前身為日治時期松山菸草工廠，現為台灣最大的文創設計基地。', officialUrl:'https://www.songshanculturalpark.org/', mapUrl:'https://www.google.com/maps/search/?api=1&query=松山文創園區+台北市信義區光復南路133號' },
+    { id:'anping', name:'台南安平古堡', category:'Tourist attractions', icon:'S', color:'#c96b1a', lat:22.9966, lng:120.1610, addr:'台南市安平區國勝路82號', desc:'1624年荷蘭東印度公司興建，是台灣最古老的城堡遺址。', officialUrl:'https://culture.tainan.gov.tw/', mapUrl:'https://www.google.com/maps/search/?api=1&query=安平古堡+台南市安平區國勝路82號' },
+    { id:'shenkeng', name:'深坑老街', category:'Tourist attractions', icon:'S', color:'#c96b1a', lat:25.0021, lng:121.6183, addr:'新北市深坑區北深路三段', desc:'以臭豆腐聞名，同時也是台北近郊保存完整的清代閩南式街屋聚落。', officialUrl:'https://www.shenkeng.ntpc.gov.tw/', mapUrl:'https://www.google.com/maps/search/?api=1&query=深坑老街+新北市深坑區北深路三段' },
+    { id:'lukang', name:'鹿港老街', category:'Tourist attractions', icon:'S', color:'#c96b1a', lat:24.0520, lng:120.4365, addr:'彰化縣鹿港鎮中山路', desc:'保存最完整的清代街道格局，擁有天后宮、龍山寺等古廟。', officialUrl:'https://lukang.cca.gov.tw/', mapUrl:'https://www.google.com/maps/search/?api=1&query=鹿港老街+彰化縣鹿港鎮中山路' },
+    { id:'hayashi', name:'台南林百貨', category:'Tourist attractions', icon:'S', color:'#c96b1a', lat:22.9969, lng:120.2016, addr:'台南市中西區忠義路二段63號', desc:'1932年開幕的昭和時代百貨公司，修復後成為文創空間。', officialUrl:'https://hayashi.com.tw/', mapUrl:'https://www.google.com/maps/search/?api=1&query=林百貨+台南市中西區忠義路二段63號' },
+    { id:'shilin', name:'士林夜市', category:'Tourist restaurant', icon:'R', color:'#2b8c6e', lat:25.0883, lng:121.5237, addr:'台北市士林區基河路', desc:'台灣規模最大的觀光夜市，是外國旅客體驗台灣夜市文化的首選。', officialUrl:'https://www.travel.taipei/zh-tw/attraction/details/1', mapUrl:'https://www.google.com/maps/search/?api=1&query=士林夜市+台北市士林區基河路' },
+    { id:'suao', name:'蘇澳冷泉', category:'Tourist attractions', icon:'S', color:'#c96b1a', lat:24.5965, lng:121.8609, addr:'宜蘭縣蘇澳鎮冷泉路', desc:'全球少見的碳酸冷泉，水溫常年維持在22°C。', officialUrl:'https://www.tourism.gov.tw/', mapUrl:'https://www.google.com/maps/search/?api=1&query=蘇澳冷泉+宜蘭縣蘇澳鎮冷泉路' }
 ];
 
-/* ══════════════════════════════════════════════════
-   SDG VINTAGE BADGES DEFINITION (Typography-Based Art)
-══════════════════════════════════════════════════ */
 const SDG_BADGES = [
-    {
-        id: 'green_traveler',
-        symbol: 'A', // Typographic representation for Activity / Art
-        label: 'Green Traveler',
-        sdgColor: '#3F7E44',
-        sdgNum: 'SDG 11',
-        category: 'Cultural and creative activities',
-        threshold: 3,
-        tip: 'GREEN TRAVELER: Supporting local artists & reviving historic spaces directly advances SDG 11 — Sustainable Cities & Communities. Keep exploring!'
-    },
-    {
-        id: 'sustainable_foodie',
-        symbol: 'R', // Typographic representation for Restaurant
-        label: 'Sustainable Foodie',
-        sdgColor: '#BF8B2E',
-        sdgNum: 'SDG 12',
-        category: 'Tourist restaurant',
-        threshold: 3,
-        tip: 'SUSTAINABLE FOODIE: Dining at certified local restaurants reduces food miles and supports SDG 12 — Responsible Consumption & Production. Delicious impact!'
-    },
-    {
-        id: 'heritage_explorer',
-        symbol: 'S', // Typographic representation for Scenic Spot
-        label: 'Heritage Explorer',
-        sdgColor: '#9E2A1C',
-        sdgNum: 'SDG 8.9',
-        category: 'Tourist attractions',
-        threshold: 3,
-        tip: 'HERITAGE EXPLORER: Deep exploration of Taiwan\'s natural & cultural assets promotes SDG 8.9 — Sustainable Tourism that creates local jobs and preserves culture.'
-    },
+    { id: 'green_traveler', symbol: 'A', label: 'Green Traveler', sdgColor: '#3F7E44', sdgNum: 'SDG 11', category: 'Cultural and creative activities', threshold: 3, tip: 'GREEN TRAVELER: Supporting local artists & reviving historic spaces directly advances SDG 11 — Sustainable Cities & Communities. Keep exploring!' },
+    { id: 'sustainable_foodie', symbol: 'R', label: 'Sustainable Foodie', sdgColor: '#BF8B2E', sdgNum: 'SDG 12', category: 'Tourist restaurant', threshold: 3, tip: 'SUSTAINABLE FOODIE: Dining at certified local restaurants reduces food miles and supports SDG 12 — Responsible Consumption & Production. Delicious impact!' },
+    { id: 'heritage_explorer', symbol: 'S', label: 'Heritage Explorer', sdgColor: '#9E2A1C', sdgNum: 'SDG 8.9', category: 'Tourist attractions', threshold: 3, tip: 'HERITAGE EXPLORER: Deep exploration of Taiwan\'s natural & cultural assets promotes SDG 8.9 — Sustainable Tourism that creates local jobs and preserves culture.' }
 ];
 
-/* ══════════════════════════════════════════════════
-   SDG FACT MESSAGES (randomly shown on unlock)
-══════════════════════════════════════════════════ */
 const SDG_FACTS = {
-    'Tourist attractions': [
-        "Stamp unlocked! Preserving historical sites like this directly supports UN SDG 11 for Sustainable Cities and Communities — every visit helps keep heritage alive!",
-        "Heritage stamp collected! Taiwan's unique natural landscapes contribute to SDG 15 (Life on Land). Sustainable tourism funds conservation of these irreplaceable ecosystems.",
-    ],
-    'Tourist restaurant': [
-        "Stamp unlocked! By dining at certified local tourist restaurants, you actively support Sustainable Consumption & Production (SDG 12) and reduce your food-mile footprint!",
-        "Local foodie stamp! Supporting Taiwan's regional food culture strengthens local supply chains and advances SDG 8 — Decent Work and Economic Growth for rural communities.",
-    ],
-    'Cultural and creative activities': [
-        "Cultural stamp unlocked! Attending local creative events revitalizes historic spaces and supports SDG 11 — Sustainable Cities. Art is the heartbeat of community resilience!",
-        "Creative explorer! Engaging with Taiwan's cultural industries helps preserve intangible heritage and advances SDG 4 — Quality Education through living cultural transmission.",
-    ],
+    'Tourist attractions': ["Stamp unlocked! Preserving historical sites like this directly supports UN SDG 11 for Sustainable Cities and Communities — every visit helps keep heritage alive!", "Heritage stamp collected! Taiwan's unique natural landscapes contribute to SDG 15 (Life on Land). Sustainable tourism funds conservation of these irreplaceable ecosystems."],
+    'Tourist restaurant': ["Stamp unlocked! By dining at certified local tourist restaurants, you actively support Sustainable Consumption & Production (SDG 12) and reduce your food-mile footprint!", "Local foodie stamp! Supporting Taiwan's regional food culture strengthens local supply chains and advances SDG 8 — Decent Work and Economic Growth for rural communities."],
+    'Cultural and creative activities': ["Cultural stamp unlocked! Attending local creative events revitalizes historic spaces and supports SDG 11 — Sustainable Cities. Art is the heartbeat of community resilience!", "Creative explorer! Engaging with Taiwan's cultural industries helps preserve intangible heritage and advances SDG 4 — Quality Education through living cultural transmission."]
 };
 
 /* ══════════════════════════════════════════════════
-   STATE
+   STATE MANAGEMENT & AUTHENTICATION
 ══════════════════════════════════════════════════ */
-const unlockedStamps = new Set(JSON.parse(localStorage.getItem('tct_stamps') || '[]'));
+let authMode = 'login'; // 'login' or 'register'
+let currentUserEmail = null;
+let unlockedStamps = new Set();
 let stampPhotos = {};
-try {
-    stampPhotos = JSON.parse(localStorage.getItem('tct_stamp_photos') || '{}');
-} catch(e) { stampPhotos = {}; }
-
-function saveStamps() {
-    localStorage.setItem('tct_stamps', JSON.stringify([...unlockedStamps]));
-}
-function saveStampPhotos() {
-    try {
-        localStorage.setItem('tct_stamp_photos', JSON.stringify(stampPhotos));
-    } catch(e) {
-        console.warn('Could not persist stamp photos (storage quota exceeded).');
-    }
-}
-
 let allLocations = [];
 let markers = {};
 let activeStampCategory = TDX_SOURCES[0].name;
-
 const _badgeAnimatedThisSession = new Set();
 
-/* ══════════════════════════════════════════════════
-   LOGIN
-══════════════════════════════════════════════════ */
+// 本地端註冊用戶數據庫模擬
+function getUsersDB() {
+    return JSON.parse(localStorage.getItem('tct_users_db') || '{}');
+}
+function saveUsersDB(db) {
+    localStorage.setItem('tct_users_db', JSON.stringify(db));
+}
+
+// 切換登入 / 註冊介面
+function setAuthMode(mode) {
+    authMode = mode;
+    document.getElementById('toggle-login').classList.toggle('active', mode === 'login');
+    document.getElementById('toggle-register').classList.toggle('active', mode === 'register');
+    document.getElementById('name-group').style.display = mode === 'register' ? 'block' : 'none';
+    document.getElementById('strength-meter').style.display = mode === 'register' ? 'block' : 'none';
+    document.getElementById('submit-auth-btn').textContent = mode === 'login' ? 'Begin Journey / 開始探索' : 'Register / 註冊';
+    
+    // 清除欄位
+    document.getElementById('password-input').value = '';
+    document.getElementById('strength-text').style.display = 'none';
+    document.getElementById('auth-hint').style.display = 'none';
+}
+
+// 偵測使用者如果沒註冊過就登入的自動反應
+function checkEmailExists() {
+    if (authMode !== 'login') return;
+    const email = document.getElementById('email-input').value.trim();
+    if (!email) return;
+    
+    const db = getUsersDB();
+    const hintEl = document.getElementById('auth-hint');
+    
+    if (email.includes('@') && !db[email]) {
+        hintEl.textContent = "💡 偵測到新旅人！此 Email 尚未註冊，系統已為您自動切換到「新帳號註冊」模式。";
+        hintEl.style.display = 'block';
+        setTimeout(() => setAuthMode('register'), 1200);
+    } else {
+        hintEl.style.display = 'none';
+    }
+}
+
+// 密碼強度計算法
+function evaluatePasswordStrength() {
+    const password = document.getElementById('password-input').value;
+    const bar = document.getElementById('strength-bar');
+    const txt = document.getElementById('strength-text');
+    
+    if (authMode !== 'register') {
+        bar.parentElement.style.display = 'none';
+        txt.style.display = 'none';
+        return;
+    }
+    
+    bar.parentElement.style.display = 'block';
+    txt.style.display = 'block';
+
+    if (!password) {
+        bar.style.width = '0%';
+        txt.textContent = '';
+        return;
+    }
+
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 8) score++;
+    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[^A-Za-z0-9]/.test(password)) score++;
+
+    if (score <= 2) {
+        bar.style.width = '33%';
+        bar.style.backgroundColor = '#ef9a9a';
+        txt.textContent = '密碼強度：弱 (Weak) - 建議加入字母、數字混合';
+        txt.style.color = '#ef9a9a';
+    } else if (score <= 4) {
+        bar.style.width = '66%';
+        bar.style.backgroundColor = '#fff59d';
+        txt.textContent = '密碼強度：中 (Medium) - 可以加入大寫字母或符號';
+        txt.style.color = '#fff59d';
+    } else {
+        bar.style.width = '100%';
+        bar.style.backgroundColor = '#a5d6a7';
+        txt.textContent = '密碼強度：強 (Strong) - 完美的永續通行防護';
+        txt.style.color = '#a5d6a7';
+    }
+}
+
+// 處理登入與註冊的主控制邏輯
+function handleAuthSubmit() {
+    const email = document.getElementById('email-input').value.trim();
+    const password = document.getElementById('password-input').value;
+    const db = getUsersDB();
+
+    if (!email || !password) {
+        alert('請填寫信箱與密碼！');
+        return;
+    }
+
+    if (authMode === 'register') {
+        const username = document.getElementById('username-input').value.trim() || '新旅人';
+        if (db[email]) {
+            alert('此 Email 已經被註冊過，請直接選擇登入。');
+            setAuthMode('login');
+            return;
+        }
+        if (password.length < 6) {
+            alert('為了安全起見，請密碼至少設定 6 碼以上。');
+            return;
+        }
+        
+        // 建立新使用者
+        db[email] = {
+            username: username,
+            password: password, // 本地演示直接明文比對
+            stamps: [],
+            photos: {}
+        };
+        saveUsersDB(db);
+        alert('✨ 註冊成功！已為您自動登入。');
+    } else {
+        // 登入驗證
+        if (!db[email] || db[email].password !== password) {
+            alert('信箱或密碼錯誤，請重新再試一次。');
+            return;
+        }
+    }
+
+    // 登入成功後狀態設定
+    currentUserEmail = email;
+    localStorage.setItem('tct_session_user', email);
+    
+    // 載入該使用者的文化足跡與印章歷史
+    unlockedStamps = new Set(db[email].stamps || []);
+    stampPhotos = db[email].photos || {};
+
+    enterApp(db[email].username);
+}
+
+// 登出流程
+function handleSignOut() {
+    if(confirm('確定要結束本次探索旅程並登出嗎？')) {
+        currentUserEmail = null;
+        localStorage.removeItem('tct_session_user');
+        
+        // 重置畫面欄位與回到登入大廳
+        document.getElementById('email-input').value = '';
+        document.getElementById('password-input').value = '';
+        setAuthMode('login');
+        
+        const sp = document.getElementById('start-page');
+        sp.style.display = 'flex';
+        sp.classList.remove('fade-out');
+        closePanel();
+    }
+}
+
+function enterApp(name) {
+    document.getElementById('header-user').textContent = `Hi, ${name} 🧭`;
+    updateAvatarAndName(name);
+    
+    const sp = document.getElementById('start-page');
+    sp.classList.add('fade-out');
+    setTimeout(() => sp.style.display = 'none', 500);
+    setTimeout(() => document.getElementById('sidebar').classList.remove('collapsed'), 400);
+    
+    // 重新校正地圖大小並渲染
+    setTimeout(() => map.invalidateSize(), 50);
+    renderStampGrid();
+}
+
 function updateAvatarAndName(name) {
     document.getElementById('passport-name').textContent = name;
-    // Get the first character for the ticket typography stamp avatar
     const firstChar = name.charAt(0).toUpperCase() || 'T';
     document.getElementById('passport-avatar').textContent = firstChar;
 }
 
-function enterApp() {
-    const name = document.getElementById('username-input').value.trim() || '旅人';
-    localStorage.setItem('tct_username', name);
-    document.getElementById('header-user').textContent = `Hi, ${name}`;
-    updateAvatarAndName(name);
-    const sp = document.getElementById('start-page');
-    sp.classList.add('fade-out');
-    setTimeout(() => sp.style.display = 'none', 650);
-    setTimeout(() => document.getElementById('sidebar').classList.remove('collapsed'), 400);
-}
-
-document.getElementById('username-input').addEventListener('keydown', e => { if (e.key === 'Enter') enterApp(); });
-window.addEventListener('load', () => {
-    const saved = localStorage.getItem('tct_username');
-    if (saved) {
-        document.getElementById('username-input').value = saved;
-        updateAvatarAndName(saved);
+function saveStampsToUser() {
+    if (!currentUserEmail) return;
+    const db = getUsersDB();
+    if (db[currentUserEmail]) {
+        db[currentUserEmail].stamps = [...unlockedStamps];
+        db[currentUserEmail].photos = stampPhotos;
+        saveUsersDB(db);
     }
-});
+}
 
 /* ══════════════════════════════════════════════════
    SIDEBAR / TAB / THEME
@@ -1261,7 +787,7 @@ document.getElementById('themeToggle').addEventListener('click', () => {
 });
 
 /* ══════════════════════════════════════════════════
-   LEAFLET MAP
+   LEAFLET MAP SETUP
 ══════════════════════════════════════════════════ */
 const map = L.map('map', { zoomControl: true }).setView([23.7, 121.0], 7);
 
@@ -1269,8 +795,6 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd', maxZoom: 19
 }).addTo(map);
-
-setTimeout(() => map.invalidateSize(), 150);
 
 function makeIcon(letter, color) {
     return L.divIcon({
@@ -1286,9 +810,6 @@ function makeIcon(letter, color) {
     });
 }
 
-/* ══════════════════════════════════════════════════
-   STATUS TOAST
-══════════════════════════════════════════════════ */
 function showStatus(msg, duration=3500) {
     const el = document.getElementById('api-status');
     el.textContent = msg;
@@ -1298,48 +819,33 @@ function showStatus(msg, duration=3500) {
 }
 
 /* ══════════════════════════════════════════════════
-   TDX: Access Token
+   TDX DATA INTEGRATION
 ══════════════════════════════════════════════════ */
 async function getTDXToken() {
-    const res = await fetch(
-        'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token',
-        {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `grant_type=client_credentials&client_id=${TDX_CLIENT_ID}&client_secret=${TDX_CLIENT_SECRET}`
-        }
-    );
+    const res = await fetch('https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `grant_type=client_credentials&client_id=${TDX_CLIENT_ID}&client_secret=${TDX_CLIENT_SECRET}`
+    });
     if (!res.ok) throw new Error('Token error: HTTP ' + res.status);
     const data = await res.json();
-    if (!data.access_token) throw new Error('No access_token in response');
     return data.access_token;
 }
 
-/* ══════════════════════════════════════════════════
-   TDX: Fetch data
-══════════════════════════════════════════════════ */
 async function fetchCultureData() {
     if (!TDX_CLIENT_ID || !TDX_CLIENT_SECRET) {
-        showStatus('TDX credentials not set — showing demo data (10 entries)');
+        showStatus('展示模式：已自動載入臺灣經典文化景點數據 (10筆)');
         return SEED_LOCATIONS;
     }
-
-    showStatus('Connecting to TDX Tourism API, please wait…', 20000);
-
+    showStatus('正在連線 TDX 觀光雲端資料庫，請稍候…', 20000);
     try {
         const token = await getTDXToken();
         const headers = { 'Authorization': `Bearer ${token}` };
-
         const results = await Promise.allSettled(
-            TDX_SOURCES.map(src =>
-                fetch(src.endpoint, { headers, signal: AbortSignal.timeout(20000) })
-                    .then(r => r.ok ? r.json() : [])
-                    .catch(e => { console.warn(src.name, 'failed:', e.message); return []; })
-            )
+            TDX_SOURCES.map(src => fetch(src.endpoint, { headers, signal: AbortSignal.timeout(20000) }).then(r => r.ok ? r.json() : []).catch(() => []))
         );
 
         const allLocs = [];
-
         results.forEach((result, idx) => {
             const src  = TDX_SOURCES[idx];
             const data = result.status === 'fulfilled' ? result.value : [];
@@ -1348,69 +854,43 @@ async function fetchCultureData() {
             data.forEach((item, i) => {
                 const pos = item.Position;
                 if (!pos?.PositionLat || !pos?.PositionLon) return;
-
                 const lat = parseFloat(pos.PositionLat);
                 const lng = parseFloat(pos.PositionLon);
-                if (isNaN(lat) || isNaN(lng)) return;
                 if (lat < 21.5 || lat > 25.5 || lng < 119.0 || lng > 122.5) return;
 
-                const name    = item[src.nameField] || item.Name || '未命名';
-                const addr    = item.Address || item.Location || '';
-                const rawDesc = item.DescriptionDetail || item.Description || item.Toldescribe || '';
-                const desc    = rawDesc.replace(/<[^>]*>/g, '').trim().slice(0, 200);
-                const web     = item.WebsiteUrl || item.Website || '';
-                const pic     = item.Picture?.PictureUrl1 || '';
-
                 allLocs.push({
-                    id:          `${src.id}_${i}`,
-                    name,
-                    category:    src.name,
-                    icon:        src.icon,
-                    color:       src.color,
-                    lat, lng, addr, desc, pic,
-                    officialUrl: web || 'https://www.taiwan.net.tw/',
-                    mapUrl:      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name + ' ' + addr)}`
+                    id: `${src.id}_${i}`,
+                    name: item[src.nameField] || item.Name || '未命名',
+                    category: src.name, icon: src.icon, color: src.color,
+                    lat, lng, addr: item.Address || item.Location || '',
+                    desc: (item.DescriptionDetail || item.Description || '').replace(/<[^>]*>/g, '').trim().slice(0, 200),
+                    pic: item.Picture?.PictureUrl1 || '',
+                    officialUrl: item.WebsiteUrl || 'https://www.taiwan.net.tw/',
+                    mapUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item[src.nameField] || '')}`
                 });
             });
         });
-
-        if (allLocs.length === 0) throw new Error('API returned empty data');
-
-        showStatus(`Loaded ${allLocs.length.toLocaleString()} locations`);
-        return allLocs;
-
+        return allLocs.length ? allLocs : SEED_LOCATIONS;
     } catch (e) {
-        console.error('TDX API error:', e.message);
-        showStatus('API connection failed — using demo data');
+        showStatus('API 連線超時 — 已載入在地暫存展示數據');
         return SEED_LOCATIONS;
     }
 }
 
-/* ══════════════════════════════════════════════════
-   Build Filter UI
-══════════════════════════════════════════════════ */
 function buildFilterUI() {
-    document.getElementById('filterContainer').innerHTML =
-        TDX_SOURCES.map(src => `
-            <label class="filter-item">
-                <input type="checkbox" value="${src.name}" checked onchange="applyFilter()">
-                <div class="filter-box"></div>
-                <span class="cat-letter" style="background:${src.color}">${src.icon}</span>
-                ${src.name}
-                <span class="filter-status" style="background:${src.color}"></span>
-            </label>`).join('');
+    document.getElementById('filterContainer').innerHTML = TDX_SOURCES.map(src => `
+        <label class="filter-item">
+            <input type="checkbox" value="${src.name}" checked onchange="applyFilter()">
+            <div class="filter-box"></div>
+            <span class="cat-letter" style="background:${src.color}">${src.icon}</span>
+            ${src.name}
+            <span class="filter-status" style="background:${src.color}"></span>
+        </label>`).join('');
 
-    const tabsEl = document.getElementById('stampTabs');
-    tabsEl.innerHTML = TDX_SOURCES.map((src, i) => `
-        <button class="stamp-tab ${i === 0 ? 'active' : ''}"
-                onclick="selectStampTab('${src.name}', this)">
-            <span style="display:inline-flex;align-items:center;justify-content:center;
-                width:16px;height:16px;border-radius:3px;background:${src.color};
-                color:white;font-family:'Playfair Display',serif;font-weight:700;
-                font-size:0.6rem;margin-right:5px">${src.icon}</span>${src.name}
+    document.getElementById('stampTabs').innerHTML = TDX_SOURCES.map((src, i) => `
+        <button class="stamp-tab ${i === 0 ? 'active' : ''}" onclick="selectStampTab('${src.name}', this)">
+            <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:3px;background:${src.color};color:white;font-family:'Playfair Display',serif;font-weight:700;font-size:0.6rem;margin-right:5px">${src.icon}</span>${src.name}
         </button>`).join('');
-
-    renderPassportDashboard();
 }
 
 function selectStampTab(categoryName, btn) {
@@ -1420,26 +900,15 @@ function selectStampTab(categoryName, btn) {
     renderStampGrid();
 }
 
-/* ══════════════════════════════════════════════════
-   RENDER LOCATIONS (map + sidebar)
-══════════════════════════════════════════════════ */
 function renderLocations(locs) {
     allLocations = locs;
-
     document.getElementById('loc-count').textContent = `(${locs.length.toLocaleString()})`;
-
-    const counter = document.getElementById('map-counter');
-    counter.textContent = `${locs.length.toLocaleString()} locations`;
-    counter.classList.add('show');
-    setTimeout(() => counter.classList.remove('show'), 5000);
-
     const list = document.getElementById('locationList');
     list.innerHTML = '';
-    const LIMIT = 200;
-    locs.slice(0, LIMIT).forEach((loc, i) => {
+    
+    locs.slice(0, 200).forEach((loc, i) => {
         const el = document.createElement('div');
         el.className = 'loc-card';
-        el.dataset.category = loc.category;
         el.innerHTML = `
             <div class="loc-thumb" style="background:${loc.color}22">
                 <span class="cat-letter" style="background:${loc.color};font-size:0.65rem;width:22px;height:22px;border-radius:3px">${loc.icon}</span>
@@ -1451,377 +920,110 @@ function renderLocations(locs) {
         el.onclick = () => selectLocation(i);
         list.appendChild(el);
     });
-    if (locs.length > LIMIT) {
-        const more = document.createElement('div');
-        more.className = 'loc-loading';
-        more.textContent = `… ${(locs.length - LIMIT).toLocaleString()} more (click map markers to view)`;
-        list.appendChild(more);
-    }
-
-    Object.values(markers).forEach(m => map.removeLayer(m));
-    markers = {};
 
     locs.forEach((loc, i) => {
         const m = L.marker([loc.lat, loc.lng], { icon: makeIcon(loc.icon, loc.color) })
             .addTo(map)
-            .bindPopup(`
-                <div class="popup-title">${loc.name}</div>
-                <div class="popup-sub">${loc.category}</div>
-                ${loc.addr ? `<div class="popup-addr">${loc.addr.slice(0,30)}</div>` : ''}
-            `)
+            .bindPopup(`<div class="popup-title">${loc.name}</div><div class="popup-sub">${loc.category}</div>`)
             .on('click', () => selectLocation(i));
         markers[loc.id] = m;
     });
-
-    renderStampGrid();
     renderPassportDashboard();
 }
 
 /* ══════════════════════════════════════════════════
-   PASSPORT DASHBOARD (Updated to Vintage Boarding Pass)
+   DASHBOARD & FOOTPRINTS PASSPORT
 ══════════════════════════════════════════════════ */
 function renderPassportDashboard() {
-    const savedName = localStorage.getItem('tct_username') || '旅人';
-    updateAvatarAndName(savedName);
-
-    const totalLocs   = allLocations.length;
+    const totalLocs = allLocations.length;
     const totalUnlocked = unlockedStamps.size;
     const pct = totalLocs > 0 ? (totalUnlocked / totalLocs * 100).toFixed(1) : 0;
+    
     document.getElementById('progress-bar-fill').style.width = Math.min(100, pct) + '%';
-    document.getElementById('progress-text').textContent =
-        `Progress: ${totalUnlocked} / ${totalLocs > 0 ? totalLocs : 200} (${pct}%)`;
+    document.getElementById('progress-text').textContent = `Progress: ${totalUnlocked} / ${totalLocs || 200} (${pct}%)`;
 
     const catCounts = {};
     TDX_SOURCES.forEach(src => { catCounts[src.name] = 0; });
     unlockedStamps.forEach(id => {
         const loc = allLocations.find(l => l.id === id);
-        if (loc && catCounts.hasOwnProperty(loc.category)) {
-            catCounts[loc.category]++;
-        }
+        if (loc && catCounts.hasOwnProperty(loc.category)) catCounts[loc.category]++;
     });
 
     const wall = document.getElementById('sdg-badges-wall');
     wall.innerHTML = '';
-
     SDG_BADGES.forEach(badge => {
-        const count      = catCounts[badge.category] || 0;
+        const count = catCounts[badge.category] || 0;
         const isUnlocked = count >= badge.threshold;
-
         const div = document.createElement('div');
         div.className = 'sdg-badge ' + (isUnlocked ? 'unlocked' : 'locked');
-        div.setAttribute('data-tip', isUnlocked
-            ? badge.tip
-            : `Unlock ${badge.threshold} stamps in "${badge.category}" to earn this badge! (${count}/${badge.threshold})`
-        );
+        div.setAttribute('data-tip', isUnlocked ? badge.tip : `Unlock ${badge.threshold} stamps in "${badge.category}" to earn this badge! (${count}/${badge.threshold})`);
 
         if (isUnlocked && !_badgeAnimatedThisSession.has(badge.id)) {
             div.classList.add('just-unlocked');
             _badgeAnimatedThisSession.add(badge.id);
         }
-
         div.innerHTML = `
-            <div class="sdg-badge-circle"
-                 style="${isUnlocked
-                    ? `background: transparent; border-color:${badge.sdgColor}; --badge-color:${badge.sdgColor};`
-                    : ''
-                 }">
+            <div class="sdg-badge-circle" style="${isUnlocked ? `border-color:${badge.sdgColor}; --badge-color:${badge.sdgColor};` : ''}">
                 <span class="sdg-symbol">${badge.symbol}</span>
-                <span class="sdg-num" style="${isUnlocked ? `color:${badge.sdgColor}` : ''}">${badge.sdgNum}</span>
+                <span class="sdg-num">${badge.sdgNum}</span>
             </div>
             <div class="sdg-badge-label">${badge.label}</div>`;
-
         wall.appendChild(div);
     });
 }
 
-/* ══════════════════════════════════════════════════
-   SDG FACT MODAL
-══════════════════════════════════════════════════ */
-function showSdgModal(category) {
-    const facts = SDG_FACTS[category] || SDG_FACTS['Tourist attractions'];
-    const fact  = facts[Math.floor(Math.random() * facts.length)];
-
-    const badge = SDG_BADGES.find(b => b.category === category);
-    document.getElementById('sdg-modal-icon').textContent  = badge ? badge.symbol : 'S';
-    document.getElementById('sdg-modal-title').textContent = 'Stamp Unlocked! 🎫';
-    document.getElementById('sdg-modal-fact').textContent  = fact;
-    document.getElementById('sdg-modal').classList.add('open');
-}
-
-function closeSdgModal() {
-    document.getElementById('sdg-modal').classList.remove('open');
-}
-
-/* ══════════════════════════════════════════════════
-   STAMP GRID
-══════════════════════════════════════════════════ */
 function renderStampGrid() {
     const grid = document.getElementById('stampGrid');
     grid.innerHTML = '';
-
     const filtered = allLocations.filter(loc => loc.category === activeStampCategory);
 
     filtered.forEach(loc => {
         const unlocked = unlockedStamps.has(loc.id);
         const photoUrl = stampPhotos[loc.id] || null;
-
         const el = document.createElement('div');
         el.className = 'stamp-item' + (unlocked ? '' : ' locked-item');
         el.id = 'stamp-' + CSS.escape(loc.id);
 
-        let stampInner;
-        if (unlocked && photoUrl) {
-            stampInner = `
-                <div class="stamp-bar-top" style="background:${loc.color}"></div>
-                <div class="stamp-img-box">
-                    <img src="${photoUrl}" alt="${loc.name}">
-                </div>
-                <div class="stamp-bar-bot" style="background:${loc.color}"></div>`;
-        } else if (unlocked) {
-            stampInner = `
-                <div class="stamp-bar-top" style="background:${loc.color}"></div>
-                <div class="stamp-img-box empty-box" style="border-color:${loc.color}33">
-                    <span style="font-size:1.2rem;opacity:0.3;color:${loc.color}">✓</span>
-                </div>
-                <div class="stamp-bar-bot" style="background:${loc.color}"></div>`;
-        } else {
-            stampInner = `<div class="stamp-img-box locked-box"></div>`;
-        }
+        let stampInner = unlocked && photoUrl 
+            ? `<div class="stamp-bar-top" style="background:${loc.color}"></div><div class="stamp-img-box"><img src="${photoUrl}"></div><div class="stamp-bar-bot" style="background:${loc.color}"></div>`
+            : (unlocked ? `<div class="stamp-bar-top" style="background:${loc.color}"></div><div class="stamp-img-box empty-box"><span style="color:${loc.color}">✓</span></div><div class="stamp-bar-bot" style="background:${loc.color}"></div>` : `<div class="stamp-img-box locked-box"></div>`);
 
-        el.innerHTML = `
-            <div class="stamp-piece ${unlocked ? '' : 'locked'}">${stampInner}</div>
-            <div class="stamp-name">${loc.name}</div>
-            <div class="stamp-status ${unlocked ? 'unlocked' : ''}">${unlocked ? '+ Collected' : 'Locked'}</div>`;
-
-        if (unlocked && photoUrl) {
-            el.querySelector('.stamp-piece').addEventListener('click', () => {
-                openLightbox(photoUrl, loc.name);
-            });
-        }
-
+        el.innerHTML = `<div class="stamp-piece ${unlocked ? '' : 'locked'}">${stampInner}</div><div class="stamp-name">${loc.name}</div><div class="stamp-status ${unlocked ? 'unlocked' : ''}">${unlocked ? '+ Collected' : 'Locked'}</div>`;
+        if (unlocked && photoUrl) el.querySelector('.stamp-piece').onclick = () => openLightbox(photoUrl, loc.name);
         grid.appendChild(el);
     });
-
-    if (filtered.length === 0) {
-        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;opacity:0.5;font-size:0.8rem;padding:2rem">No data loaded yet — explore the map first.</p>';
-    }
-
-    renderPassportDashboard();
 }
 
-/* ══════════════════════════════════════════════════
-   UNLOCK STAMP
-══════════════════════════════════════════════════ */
 function unlockStamp(locId, dataUrl) {
     const isNew = !unlockedStamps.has(locId);
     unlockedStamps.add(locId);
-    saveStamps();
-
-    if (dataUrl && !stampPhotos[locId]) {
-        stampPhotos[locId] = dataUrl;
-        saveStampPhotos();
-    }
-
+    if (dataUrl) stampPhotos[locId] = dataUrl;
+    
+    saveStampsToUser(); // 同步回儲存空間
     renderStampGrid();
-
-    const piece = document.querySelector(`#stamp-${CSS.escape(locId)} .stamp-piece`);
-    if (piece) piece.classList.add('just-unlocked');
+    renderPassportDashboard();
 
     if (isNew) {
         const loc = allLocations.find(l => l.id === locId);
-        if (loc) {
-            setTimeout(() => showSdgModal(loc.category), 700);
-        }
+        if (loc) setTimeout(() => showSdgModal(loc.category), 700);
     }
-
     return isNew;
 }
 
 /* ══════════════════════════════════════════════════
-   EXPORT PASSPORT (html2canvas)
-══════════════════════════════════════════════════ */
-async function exportPassport() {
-    const btn = document.querySelector('.passport-export-btn');
-    const origText = btn.textContent;
-    btn.textContent = '⏳ Generating…';
-    btn.disabled = true;
-
-    try {
-        const card    = document.getElementById('passport-card');
-        const canvas  = await html2canvas(card, {
-            backgroundColor: document.body.classList.contains('night') ? '#25211c' : '#fcf6e8',
-            scale: 2,
-            useCORS: true,
-            allowTaint: false,
-            logging: false,
-        });
-
-        const link    = document.createElement('a');
-        link.download = 'Taiwan_Cultural_BoardingPass.png';
-        link.href     = canvas.toDataURL('image/png');
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    } catch (err) {
-        console.error('Export failed:', err);
-        alert('Export failed — please try again. (' + err.message + ')');
-    } finally {
-        btn.textContent = origText;
-        btn.disabled = false;
-    }
-}
-
-/* ══════════════════════════════════════════════════
-   INFO PANEL
-══════════════════════════════════════════════════ */
-function selectLocation(i) {
-    const loc = allLocations[i];
-    if (!loc) return;
-
-    document.querySelectorAll('.loc-card').forEach((c, j) =>
-        c.classList.toggle('selected', j === i));
-
-    document.getElementById('panelTag').textContent   = loc.category;
-    document.getElementById('panelTitle').textContent = loc.name;
-    document.getElementById('panelDesc').textContent  = loc.desc || '暫無詳細說明。';
-    document.getElementById('panelAddr').innerHTML    = loc.addr ? `${loc.addr}` : '';
-
-    const panelImg = document.getElementById('panelImg');
-    if (loc.pic) {
-        panelImg.innerHTML = `<img src="${loc.pic}" alt="${loc.name}" onerror="this.parentElement.innerHTML='<span style=font-size:2.5rem>${loc.icon}</span>'">`;
-        panelImg.style.background = '';
-    } else {
-        panelImg.innerHTML = `<span class="cat-letter" style="background:${loc.color};width:54px;height:54px;font-size:1.6rem;border-radius:6px">${loc.icon}</span>`;
-        panelImg.style.background = loc.color + '22';
-    }
-
-    const hasWeb = loc.officialUrl && loc.officialUrl !== 'https://www.taiwan.net.tw/';
-    document.getElementById('panelLinks').innerHTML = `
-        ${hasWeb ? `<a class="panel-link-btn btn-primary" href="${loc.officialUrl}" target="_blank" rel="noopener">Official Website ›</a>` : ''}
-        <a class="panel-link-btn btn-outline" href="${loc.mapUrl}" target="_blank" rel="noopener">View on Google Maps</a>`;
-
-    document.getElementById('infoPanel').classList.add('open');
-    map.setView([loc.lat, loc.lng], 15, { animate: true });
-    markers[loc.id]?.openPopup();
-}
-
-function closePanel() {
-    document.getElementById('infoPanel').classList.remove('open');
-    document.querySelectorAll('.loc-card').forEach(c => c.classList.remove('selected'));
-}
-
-/* ══════════════════════════════════════════════════
-   FILTER + SEARCH
-══════════════════════════════════════════════════ */
-function applyFilter() {
-    const checked = new Set(
-        [...document.querySelectorAll('#filterContainer input:checked')].map(cb => cb.value)
-    );
-    const q = document.getElementById('searchInput').value.trim().toLowerCase();
-
-    document.querySelectorAll('.loc-card').forEach((card, i) => {
-        const loc = allLocations[i];
-        if (!loc) return;
-        const catOk    = checked.has(loc.category);
-        const searchOk = !q ||
-            loc.name.toLowerCase().includes(q) ||
-            loc.id.toLowerCase().includes(q) ||
-            (loc.addr || '').toLowerCase().includes(q);
-        const show = catOk && searchOk;
-        card.style.display = show ? 'flex' : 'none';
-        if (markers[loc.id]) {
-            show ? map.addLayer(markers[loc.id]) : map.removeLayer(markers[loc.id]);
-        }
-    });
-}
-
-document.getElementById('searchInput').addEventListener('input', applyFilter);
-
-/* ══════════════════════════════════════════════════
-   HAVERSINE
-══════════════════════════════════════════════════ */
-function haversineDistance(lat1, lng1, lat2, lng2) {
-    const R = 6371000;
-    const toRad = d => d * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-/* ══════════════════════════════════════════════════
-   EXIF GPS conversion
-══════════════════════════════════════════════════ */
-function exifGpsToDecimal(arr, ref) {
-    if (!arr || arr.length < 3) return null;
-    const dec = arr[0] + arr[1]/60 + arr[2]/3600;
-    return (ref === 'S' || ref === 'W') ? -dec : dec;
-}
-
-/* ══════════════════════════════════════════════════
-   Cascading manual-select UI
-══════════════════════════════════════════════════ */
-function buildCascadingSelect(toastEl, dataUrl) {
-    const catOptions = TDX_SOURCES.map(src =>
-        `<option value="${src.name}">${src.name}</option>`
-    ).join('');
-
-    toastEl.innerHTML = `
-        <strong>⚠ This photo does not have GPS information.</strong><br>
-        <small>Please manually select where this photo was taken:</small>
-        <div class="manual-select-wrap">
-            <select id="manual-cat-select" onchange="updateLocSelect()">
-                ${catOptions}
-            </select>
-            <select id="manual-loc-select"></select>
-            <button class="manual-confirm-btn" onclick="confirmManualUnlock('${encodeURIComponent(JSON.stringify(dataUrl))}')">
-                Confirm
-            </button>
-        </div>`;
-
-    updateLocSelect();
-}
-
-function updateLocSelect() {
-    const catSel = document.getElementById('manual-cat-select');
-    const locSel = document.getElementById('manual-loc-select');
-    if (!catSel || !locSel) return;
-    const chosenCat = catSel.value;
-    const filtered  = allLocations
-        .map((loc, i) => ({ loc, i }))
-        .filter(({ loc }) => loc.category === chosenCat);
-    locSel.innerHTML = filtered.length
-        ? filtered.map(({ loc, i }) => `<option value="${i}">${loc.name}</option>`).join('')
-        : '<option value="">— No locations —</option>';
-}
-
-function confirmManualUnlock(encodedDataUrl) {
-    const catSel = document.getElementById('manual-cat-select');
-    const locSel = document.getElementById('manual-loc-select');
-    if (!catSel || !locSel || locSel.value === '') return;
-    const idx = parseInt(locSel.value, 10);
-    let dataUrl;
-    try { dataUrl = JSON.parse(decodeURIComponent(encodedDataUrl)); } catch(e) { dataUrl = ''; }
-    manualUnlock(idx, dataUrl);
-}
-
-/* ══════════════════════════════════════════════════
-   PHOTO UPLOAD
+   PHOTO UPLOAD EXIF GPS LOGIC
 ══════════════════════════════════════════════════ */
 function handlePhotoUpload(input) {
     const file = input.files[0];
     if (!file) return;
     const toast = document.getElementById('upload-toast');
-    toast.className = 'info';
-    toast.textContent = 'Reading photo GPS info…';
+    toast.className = 'info'; toast.textContent = '正在讀取相片內嵌地理座標 (EXIF)...';
 
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = function(e) {
         const dataUrl = e.target.result;
-        const img = new Image();
-        img.src = dataUrl;
+        const img = new Image(); img.src = dataUrl;
         img.onload = function() {
             EXIF.getData(img, function() {
                 const latArr = EXIF.getTag(this, 'GPSLatitude');
@@ -1829,79 +1031,108 @@ function handlePhotoUpload(input) {
                 const lngArr = EXIF.getTag(this, 'GPSLongitude');
                 const lngRef = EXIF.getTag(this, 'GPSLongitudeRef');
 
-                const photoLat = exifGpsToDecimal(latArr, latRef);
-                const photoLng = exifGpsToDecimal(lngArr, lngRef);
+                const toDec = (arr, ref) => arr ? ((arr[0] + arr[1]/60 + arr[2]/3600) * (ref==='S'||ref==='W'?-1:1)) : null;
+                const pLat = toDec(latArr, latRef);
+                const pLng = toDec(lngArr, lngRef);
 
-                if (photoLat === null || photoLng === null) {
+                if (!pLat || !pLng) {
                     toast.className = 'error';
                     buildCascadingSelect(toast, dataUrl);
-                    input.value = '';
                     return;
                 }
 
-                const RADIUS = 500;
-                const matches = allLocations
-                    .map((loc, i) => ({ loc, i, dist: haversineDistance(photoLat, photoLng, loc.lat, loc.lng) }))
-                    .filter(m => m.dist < RADIUS)
-                    .sort((a, b) => a.dist - b.dist);
+                // 檢查 500公尺 內景點
+                let closest = null, minDist = Infinity;
+                allLocations.forEach(loc => {
+                    const d = (Math.acos(Math.sin(pLat*Math.PI/180)*Math.sin(loc.lat*Math.PI/180)+Math.cos(pLat*Math.PI/180)*Math.cos(loc.lat*Math.PI/180)*Math.cos((loc.lng-pLng)*Math.PI/180))*6371000);
+                    if (d < minDist) { minDist = d; closest = loc; }
+                });
 
-                if (matches.length === 0) {
-                    toast.className = 'error';
-                    toast.innerHTML = `No location within 500 m of (${photoLat.toFixed(4)}, ${photoLng.toFixed(4)}) — stamp not unlocked.`;
-                    input.value = '';
-                    return;
+                if (minDist < 500) {
+                    unlockStamp(closest.id, dataUrl);
+                    toast.className = 'success'; toast.innerHTML = `驗證成功！解鎖印章：<strong>${closest.name}</strong>`;
+                } else {
+                    toast.className = 'error'; toast.textContent = '相片座標不在任何合作景點周邊 500 公尺內。';
                 }
-
-                const closest = matches[0];
-                const isNew   = unlockStamp(closest.loc.id, dataUrl);
-                const distStr = `${Math.round(closest.dist)} m`;
-
-                toast.className = 'success';
-                toast.innerHTML = isNew
-                    ? `Unlocked stamp: <strong>${closest.loc.name}</strong> (${distStr} away)`
-                    : `Confirmed near <strong>${closest.loc.name}</strong> (${distStr} away)`;
-
-                input.value = '';
             });
         };
     };
 }
 
-function manualUnlock(locIndex, dataUrl) {
-    const loc   = allLocations[locIndex];
-    const isNew = unlockStamp(loc.id, dataUrl || null);
-    const toast = document.getElementById('upload-toast');
-    toast.className = 'success';
-    toast.innerHTML = isNew
-        ? `Stamp manually unlocked: <strong>${loc.name}</strong>`
-        : `<strong>${loc.name}</strong> stamp already in your collection.`;
+function buildCascadingSelect(toastEl, dataUrl) {
+    const catOptions = TDX_SOURCES.map(src => `<option value="${src.name}">${src.name}</option>`).join('');
+    toastEl.innerHTML = `
+        <strong>⚠ 此相片遺失 GPS 數據。</strong><br><small>請手動補登您拍照的對應文化據點：</small>
+        <div class="manual-select-wrap">
+            <select id="manual-cat-select" onchange="updateLocSelect()">${catOptions}</select>
+            <select id="manual-loc-select"></select>
+            <button class="manual-confirm-btn" onclick="confirmManualUnlock('${encodeURIComponent(dataUrl)}')">確認解鎖</button>
+        </div>`;
+    updateLocSelect();
 }
 
-/* ══════════════════════════════════════════════════
-   LIGHTBOX
-══════════════════════════════════════════════════ */
-function openLightbox(src, info) {
-    document.getElementById('lightbox-img').src = src;
-    document.getElementById('lightbox-info').textContent = info;
-    document.getElementById('lightbox').classList.add('open');
+function updateLocSelect() {
+    const cat = document.getElementById('manual-cat-select').value;
+    const locSel = document.getElementById('manual-loc-select');
+    const filtered = allLocations.filter(l => l.category === cat);
+    locSel.innerHTML = filtered.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
 }
-function closeLightbox() {
-    document.getElementById('lightbox').classList.remove('open');
-}
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') {
-        closeLightbox();
-        closeSdgModal();
+
+function confirmManualUnlock(url) {
+    const id = document.getElementById('manual-loc-select').value;
+    if(id) {
+        unlockStamp(id, decodeURIComponent(url));
+        document.getElementById('upload-toast').className = 'success';
+        document.getElementById('upload-toast').textContent = '手動足跡補登成功！';
     }
-});
+}
 
 /* ══════════════════════════════════════════════════
-   BOOT
+   INTERACTION UI EFFECTS
+══════════════════════════════════════════════════ */
+function selectLocation(i) {
+    const loc = allLocations[i];
+    if (!loc) return;
+    document.getElementById('panelTag').textContent = loc.category;
+    document.getElementById('panelTitle').textContent = loc.name;
+    document.getElementById('panelDesc').textContent = loc.desc || '暫無說明。';
+    document.getElementById('panelImg').innerHTML = loc.pic ? `<img src="${loc.pic}">` : `<span class="cat-letter" style="background:${loc.color}">${loc.icon}</span>`;
+    document.getElementById('infoPanel').classList.add('open');
+    map.setView([loc.lat, loc.lng], 14);
+}
+function closePanel() { document.getElementById('infoPanel').classList.remove('open'); }
+function openLightbox(s, i) { document.getElementById('lightbox-img').src=s; document.getElementById('lightbox-info').textContent=i; document.getElementById('lightbox').classList.add('open'); }
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
+function showSdgModal(c) { document.getElementById('sdg-modal-fact').textContent = SDG_FACTS[c][0]; document.getElementById('sdg-modal').classList.add('open'); }
+function closeSdgModal() { document.getElementById('sdg-modal').classList.remove('open'); }
+function applyFilter() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const checked = new Set([...document.querySelectorAll('#filterContainer input:checked')].map(c=>c.value));
+    allLocations.forEach(loc => {
+        const show = checked.has(loc.category) && loc.name.toLowerCase().includes(q);
+        if(markers[loc.id]) { show ? map.addLayer(markers[loc.id]) : map.removeLayer(markers[loc.id]); }
+    });
+}
+document.getElementById('searchInput').addEventListener('input', applyFilter);
+
+/* ══════════════════════════════════════════════════
+   APPLICATION INITIALIZATION BOOT
 ══════════════════════════════════════════════════ */
 buildFilterUI();
-fetchCultureData().then(locs => renderLocations(locs));
+fetchCultureData().then(locs => {
+    renderLocations(locs);
+    
+    // 自動恢復已存在的 Session
+    const activeSession = localStorage.getItem('tct_session_user');
+    const db = getUsersDB();
+    if (activeSession && db[activeSession]) {
+        currentUserEmail = activeSession;
+        unlockedStamps = new Set(db[activeSession].stamps || []);
+        stampPhotos = db[activeSession].photos || {};
+        enterApp(db[activeSession].username);
+    }
+});
 </script>
-
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </body>
 </html>
