@@ -5,7 +5,7 @@
 //   餐飲 https://data.gov.tw/dataset/7779
 //   活動 https://data.gov.tw/dataset/7778
 //
-// 做法：下載完整資料 → 轉成網站用的格式 → 各縣市平均挑選（不集中在少數縣市）
+// 做法：下載完整資料 → 轉成網站用的格式 → 各縣市平均挑選（不集中在少數縣市，總數約 750 筆）
 // 執行：node scripts/fetch-opendata.mjs            （寫入 data/locations.json）
 //       OUTPUT=/tmp/preview.json node scripts/fetch-opendata.mjs   （只輸出預覽）
 // 需要系統有 unzip 指令（macOS、GitHub Actions 的 ubuntu 都有）
@@ -27,11 +27,11 @@ const MAX_ZIP_BYTES = 50 * 1024 * 1024;   // 安全上限：異常大的檔案�
 // max：這一類總共最多幾筆；perCity：每個縣市最多幾筆（讓全台平均分布）
 const SOURCES = [
   { file: 'Attraction', list: 'Attractions', idField: 'AttractionID', nameField: 'AttractionName',
-    category: 'Tourist attractions', icon: 'S', color: '#c96b1a', max: 600, perCity: 28 },
+    category: 'Tourist attractions', icon: 'S', color: '#c96b1a', max: 600, perCity: 20 },
   { file: 'Restaurant', list: 'Restaurants', idField: 'RestaurantID', nameField: 'RestaurantName',
-    category: 'Tourist restaurant', icon: 'R', color: '#2b8c6e', max: 300, perCity: 16 },
+    category: 'Tourist restaurant', icon: 'R', color: '#2b8c6e', max: 300, perCity: 10 },
   { file: 'Event', list: 'Events', idField: 'EventID', nameField: 'EventName',
-    category: 'Cultural and creative activities', icon: 'A', color: '#9e2a1c', max: 200, perCity: 12, isEvent: true },
+    category: 'Cultural and creative activities', icon: 'A', color: '#9e2a1c', max: 200, perCity: 8, isEvent: true },
 ];
 
 const clean = s => String(s ?? '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
