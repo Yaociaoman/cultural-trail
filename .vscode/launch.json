@@ -1,0 +1,15 @@
+{
+  // 按 F5（Run and Debug）：先啟動本機網頁伺服器，再用 Chrome 開 http://127.0.0.1:5500
+  // Agent 服務請另外在終端機啟動，或執行工作「Agent 服務 (8787)」
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "開啟網站（本機伺服器）",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5500/index.html",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "網站伺服器 (5500)"
+    }
+  ]
+}
