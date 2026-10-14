@@ -1,0 +1,62 @@
+{
+  "_comment": "人工整理，非自動產生。研究紀錄見 docs/carbon-sources.md。單位：g CO2e／延人公里（每人每公里）。網頁與 agent/ 共用這一份，改係數只改這裡。",
+  "version": "2026-10-14",
+  "retrievedAt": "2026-10-14",
+  "factors": {
+    "walk": {
+      "available": true, "basis": "per_passenger_km", "gCO2e": 0, "tier": 0, "year": null,
+      "source": { "name": "", "org": "", "url": "", "license": "" },
+      "notes": "僅計算行駛過程，不含製造與生命週期排放"
+    },
+    "bicycle": {
+      "available": true, "basis": "per_passenger_km", "gCO2e": 0, "tier": 0, "year": null,
+      "source": { "name": "", "org": "", "url": "", "license": "" },
+      "notes": "一般腳踏車；僅計算行駛過程，不含製造與生命週期排放"
+    },
+    "bus": {
+      "available": true, "basis": "per_passenger_km", "gCO2e": 94.4, "tier": 1, "year": 2014,
+      "source": {
+        "name": "碳足跡排放係數：營業大客車(市區公車及公路客運-柴油)", "org": "環境部（係數由交通部運輸研究所建置）",
+        "url": "https://data.gov.tw/dataset/28176", "license": "政府資料開放授權條款－第1版"
+      },
+      "notes": "原始值 0.0944 kg CO2e／延人公里。採全國性係數，不採僅限臺南市的 2017 年市區公車係數"
+    },
+    "mrt": {
+      "available": false, "basis": "per_passenger_km", "gCO2e": null, "tier": 3, "year": null,
+      "source": { "name": "", "org": "", "url": "", "license": "" },
+      "notes": "data.gov.tw 28176 沒有捷運係數，依使用者決定不顯示"
+    },
+    "train": {
+      "available": true, "basis": "per_passenger_km", "gCO2e": 54, "tier": 1, "year": 2015,
+      "source": {
+        "name": "碳足跡排放係數：臺灣鐵路運輸服務(電聯車)", "org": "環境部（係數由交通部鐵路改建工程局建置）",
+        "url": "https://data.gov.tw/dataset/28176", "license": "政府資料開放授權條款－第1版"
+      },
+      "notes": "原始資料標示為 54 kg CO2e／延人公里，若照字面會是汽車的約 470 倍，判斷實為 54 公克。採電聯車（西部幹線多已電氣化）"
+    },
+    "hsr": {
+      "available": true, "basis": "per_passenger_km", "gCO2e": 34, "tier": 1, "year": 2018,
+      "source": {
+        "name": "碳足跡排放係數：高速鐵路運輸服務", "org": "環境部、台灣高速鐵路股份有限公司",
+        "url": "https://data.gov.tw/dataset/28176", "license": "政府資料開放授權條款－第1版"
+      },
+      "notes": "原始值 0.034 kg CO2e／延人公里。同名有 2015 年（0.038）與 2018 年兩筆，取最新年度"
+    },
+    "motorcycle": {
+      "available": true, "basis": "per_passenger_km", "gCO2e": 95.1, "tier": 1, "year": 2014,
+      "source": {
+        "name": "碳足跡排放係數：機器腳踏車(汽油)", "org": "環境部（係數由交通部運輸研究所建置）",
+        "url": "https://data.gov.tw/dataset/28176", "license": "政府資料開放授權條款－第1版"
+      },
+      "notes": "原始值 0.0951 kg CO2e／延人公里。官方為每人基準，依使用者決定不另算車輛數"
+    },
+    "car": {
+      "available": true, "basis": "per_passenger_km", "gCO2e": 115, "tier": 1, "year": 2014,
+      "source": {
+        "name": "碳足跡排放係數：自用小客車(汽油)", "org": "環境部（係數由交通部運輸研究所建置）",
+        "url": "https://data.gov.tw/dataset/28176", "license": "政府資料開放授權條款－第1版"
+      },
+      "notes": "原始值 0.115 kg CO2e／延人公里。官方為每人基準，依使用者決定不另算車輛數"
+    }
+  }
+}

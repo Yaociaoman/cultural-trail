@@ -1,0 +1,38 @@
+{
+  "_comment": "所有假設值與設定，都是初始假設（不是官方數字），會在「計算方式與資料來源」中公開。網頁與 agent/ 共用這一份。",
+  "modes": ["walk", "bicycle", "bus", "mrt", "train", "hsr", "motorcycle", "car"],
+  "baselineMode": "car",
+  "detourFactor": 1.3,
+  "minLegKm": 0.05,
+  "limits": { "maxStops": 8, "minPeople": 1, "maxPeople": 10 },
+  "speedKmh": { "walk": 5, "bicycle": 15, "bus": 20, "mrt": 35, "train": 50, "hsr": 200, "motorcycle": 30, "car": 35 },
+  "waitMin":  { "walk": 0, "bicycle": 0, "bus": 10, "mrt": 5, "train": 10, "hsr": 20, "motorcycle": 0, "car": 0 },
+  "_rangeKm": "每段距離（估算路程）在範圍內才顯示；min／max 為 null 代表不限。stationModes 在 MVP 模式下才用這裡的範圍，並標「需確認站點」",
+  "rangeKm": {
+    "walk":       { "min": null, "max": 2.5 },
+    "bicycle":    { "min": null, "max": 15 },
+    "motorcycle": { "min": null, "max": 100 },
+    "car":        { "min": null, "max": null },
+    "bus":        { "min": 1.5,  "max": 80 },
+    "train":      { "min": 10,   "max": null },
+    "hsr":        { "min": 50,   "max": null },
+    "mrt":        { "min": null, "max": null }
+  },
+  "stationModes": ["bus", "mrt", "train", "hsr"],
+  "_stationReachKm": "TDX 模式：起訖兩端到最近車站的直線距離在此範圍內才視為可搭",
+  "stationReachKm": { "bus": 0.5, "mrt": 1.0, "train": 1.5, "hsr": 3.0 },
+  "_mvpHiddenModes": "MVP 模式完全無法判斷有沒有站，所以不顯示",
+  "mvpHiddenModes": ["mrt"],
+  "suggestion": { "reasonableFactor": 1.5, "reasonableExtraMin": 20 },
+  "_landmasses": "離島的大致範圍（緯度、經度的方框，示意用）。兩端位於不同陸地（含本島）時，該段需搭飛機或船，不計算陸路碳排",
+  "_mainOnlyModes": "離島沒有臺鐵、高鐵、捷運：兩端都在本島才顯示",
+  "mainOnlyModes": ["mrt", "train", "hsr"],
+  "landmasses": [
+    { "id": "kinmen",       "bbox": [24.37, 118.13, 24.55, 118.50] },
+    { "id": "penghu",       "bbox": [23.15, 119.30, 23.80, 119.75] },
+    { "id": "matsu",        "bbox": [25.93, 119.88, 26.40, 120.52] },
+    { "id": "greenIsland",  "bbox": [22.63, 121.46, 22.69, 121.51] },
+    { "id": "orchidIsland", "bbox": [21.99, 121.49, 22.10, 121.62] },
+    { "id": "liuqiu",       "bbox": [22.32, 120.35, 22.37, 120.40] }
+  ]
+}
