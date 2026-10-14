@@ -260,3 +260,50 @@ def test_wrong_language_is_rewritten(client, monkeypatch):
 def test_urls_and_links_removed():
     out = guard.clean_reply("看 [官網](https://evil.example.com/phish) 或 www.evil.com 和 http://x.y/z", "zh-TW")
     assert "http" not in out and "www." not in out and "官網" in out
+
+
+def test_route_in_response(client, monkeypatch):
+    fake = FakeOllama(tool_call("plan_route", locations=["A_TN_1", "A_TN_2"]),
+                      {"content": "先到安平古堡，再到林百貨，全程 999 公里（估算值）。"})
+    monkeypatch.setattr(ollama_client, "chat", fake)
+    body = ask(client, "安平古堡到林百貨怎麼去比較環保？").json()
+    route = body["route"]
+    assert route["order"] == ["A_TN_1", "A_TN_2"] and route["legs"][0]["est"] is True
+    assert {"from", "to", "km", "est", "suggested"} <= set(route["legs"][0])
+    assert "📊" in body["reply"]          # 模型的 999 公里與工具不符 → 附上系統計算
+    assert body["locations"] == ["A_TN_1", "A_TN_2"]
+
+
+# ── 地名校正、重複項目、內部用語 ──
+
+def test_fix_typo_names_and_duplicates():
+    reply = ("台南推薦：\n1. 安平古壘：荷蘭人興建\n   - 很古老\n2. 林百貨：昭和百貨\n"
+             "3. 林百貨：昭和百貨\n   - 重複的子項目\n4. 安平古堡：荷蘭人興建")
+    out = guard.fix_list_names(reply, ["A_TN_1", "A_TN_2"])
+    lines = out.split("\n")
+    assert lines[1] == "1. 安平古堡：荷蘭人興建"       # 古壘 → 古堡
+    assert out.count("林百貨") == 1 and "重複的子項目" not in out
+    assert "3." not in out                                # 4. 和 1. 校正後相同 → 移除，重新編號
+    assert "   - 很古老" in out
+
+
+def test_unrelated_names_not_changed():
+    out = guard.fix_list_names("1. 完全不同的地方：介紹", ["A_TN_1"])
+    assert out == "1. 完全不同的地方：介紹"
+
+
+def test_internal_terms_removed():
+    out = guard.clean_reply("資料中找不到華山。請先使用 search_locations 查詢正確的地點 id。要不要改看宜蘭？", "zh-TW")
+    assert out == "資料中找不到華山。要不要改看宜蘭？"
+
+
+def test_code_blocked():
+    assert guard.clean_reply("好的：\n```python\nprint('hi')\n```", "zh-TW") == guard.OFF_TOPIC["zh-TW"]
+    assert guard.clean_reply("Sure:\ndef add(a, b):\n    return a + b", "en") == guard.OFF_TOPIC["en"]
+    assert guard.clean_reply("從 import 港口附近出發", "zh-TW") == "從 import 港口附近出發"
+
+
+def test_simplified_to_traditional_keeps_official_names():
+    out = guard.clean_reply("松山文创园区，告诉我你想去哪里？台北101、村里活動", "zh-TW")
+    assert out == "松山文創園區，告訴我你想去哪裡？台北101、村里活動"
+    assert guard.clean_reply("汤圍溝", "en") == "汤圍溝"   # 只有繁中回覆才轉

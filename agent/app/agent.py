@@ -34,7 +34,7 @@ DEFAULT_CHIPS = {
 
 # 看起來是在問地點、行程或網站用法（這類問題一定要先查資料）
 _NEEDS_DATA = re.compile(
-    r"行程|一日遊|推薦|好玩|景點|美食|餐廳|小吃|夜市|老街|溫泉|去哪|哪裡|附近|集章|徽章|網站|怎麼用|"
+    r"行程|一日遊|推薦|好玩|景點|美食|餐廳|小吃|夜市|老街|溫泉|去哪|哪裡|附近|集章|徽章|網站|怎麼用|路線|怎麼去|碳排|環保|"
     r"trip|visit|itinerary|recommend|where|near|stamp|badge|"
     r"観光|おすすめ|何が|どこ|近く|スタンプ|"
     r"besuchen|empfehl|Sehensw|wo |Nähe|Stempel", re.IGNORECASE)
@@ -81,13 +81,12 @@ def _collect_ids(result: dict) -> list[str]:
     return ids
 
 
-async def _loop(req: ChatRequest, used_tools: list[str]) -> tuple[str, list[str]]:
+async def _loop(req: ChatRequest, used_tools: list[str], found: dict) -> str:
     ctx = req.context
     messages = [{"role": "system",
                  "content": build_system_prompt(req.lang, ctx.lat if ctx else None, ctx.lng if ctx else None)}]
     messages += [{"role": m.role, "content": m.content} for m in req.recent()]
     tool_ctx = {"lang": req.lang}
-    candidate_ids: list[str] = []
     tool_defs = tools.ollama_tools()
 
     last_user = req.recent()[-1].content
@@ -100,7 +99,7 @@ async def _loop(req: ChatRequest, used_tools: list[str]) -> tuple[str, list[str]
                 msg, calls = {"content": ""}, [auto_tool_call(last_user)]
                 used_tools.append("auto")
             else:
-                return msg.get("content", ""), candidate_ids
+                return msg.get("content", "")
 
         messages.append({"role": "assistant", "content": msg.get("content", ""), "tool_calls": calls})
         for call in calls[:MAX_TOOL_CALLS_PER_ROUND]:
@@ -113,14 +112,17 @@ async def _loop(req: ChatRequest, used_tools: list[str]) -> tuple[str, list[str]
                     args = {}
             result = tools.run_tool(name, args, tool_ctx)
             used_tools.append(name if name in tools.TOOLS else "invalid")
-            candidate_ids += _collect_ids(result)
+            found["ids"] += _collect_ids(result)
+            if name == "plan_route" and "legs" in result:
+                found["route"] = result
+                found["ids"] += result["order"]
             messages.append({"role": "tool", "tool_name": name,
                              "content": json.dumps(result, ensure_ascii=False)})
 
     # 超過工具呼叫上限：不給工具，強制用現有資料回答
     messages.append({"role": "system", "content": FORCE_ANSWER.get(req.lang, FORCE_ANSWER["zh-TW"])})
     msg = await ollama_client.chat(messages, None)
-    return msg.get("content", ""), candidate_ids
+    return msg.get("content", "")
 
 
 async def _fix_language(text: str, lang: str) -> str:
@@ -132,30 +134,49 @@ async def _fix_language(text: str, lang: str) -> str:
     return msg.get("content", "") or text
 
 
-async def _answer(req: ChatRequest, used_tools: list[str]) -> tuple[str, list[str]]:
-    raw, candidate_ids = await _loop(req, used_tools)
+async def _answer(req: ChatRequest, used_tools: list[str], found: dict) -> str:
+    raw = await _loop(req, used_tools, found)
     if wrong_language(raw, req.lang):
         used_tools.append("rewrite_lang")
         raw = await _fix_language(raw, req.lang)
-    return raw, candidate_ids
+    return raw
+
+
+def _public_route(route: dict | None) -> dict | None:
+    """回給前端的路線（規格 §6.3 格式，加上建議交通方式與名稱）。"""
+    if not route:
+        return None
+    return {
+        "order": route["order"],
+        "legs": [{"from": l["from"], "to": l["to"], "km": l["km"], "est": True, "suggested": l["suggested"]}
+                 for l in route["legs"]],
+        "carbon": route["carbon"],
+        "suggested_kgCO2e": route["suggested_kgCO2e"],
+        "car_kgCO2e": route["car_kgCO2e"],
+        "saved_vs_car_kgCO2e": route["saved_vs_car_kgCO2e"],
+    }
 
 
 async def run_agent(req: ChatRequest) -> dict:
     """執行 Agent；Ollama 連不上或逾時時丟出 OllamaError / asyncio.TimeoutError。"""
     started = time.monotonic()
     used_tools: list[str] = []
+    found: dict = {"ids": [], "route": None}   # 工具查到的地點 id 與路線
     try:
-        raw, candidate_ids = await asyncio.wait_for(_answer(req, used_tools), TOTAL_TIMEOUT)
+        raw = await asyncio.wait_for(_answer(req, used_tools, found), TOTAL_TIMEOUT)
     finally:
         # 隱私：日誌只記錄耗時與工具名稱，不記錄對話內容與位置
         log.info("chat done in %.1fs, tools=%s", time.monotonic() - started, used_tools)
 
-    reply = guard.clean_reply(raw, req.lang) or EMPTY_REPLY.get(req.lang, EMPTY_REPLY["zh-TW"])
+    reply = guard.fix_list_names(guard.clean_reply(raw, req.lang), found["ids"]) \
+        or EMPTY_REPLY.get(req.lang, EMPTY_REPLY["zh-TW"])
+    route = found["route"]
+    reply = guard.finalize_route(reply, route, req.lang)
     return {
         "reply": reply,
         "chips": DEFAULT_CHIPS.get(req.lang, DEFAULT_CHIPS["zh-TW"]),
-        "locations": guard.mentioned_locations(reply, candidate_ids),
-        "route": None,
+        "locations": guard.mentioned_locations(reply, found["ids"]),
+        "route": _public_route(route),
         "lang": req.lang,
         "fallback": False,
     }

@@ -8,11 +8,12 @@
 import logging
 import math
 
-from . import get_location, get_site_help, nearby_locations, search_locations
+from . import (estimate_carbon, get_location, get_site_help, nearby_locations, plan_route,
+               search_locations)
 
 log = logging.getLogger("agent.tools")
 
-_MODULES = [search_locations, get_location, nearby_locations, get_site_help]
+_MODULES = [search_locations, get_location, nearby_locations, plan_route, estimate_carbon, get_site_help]
 TOOLS = {m.SCHEMA["name"]: m for m in _MODULES}
 
 # 由伺服器注入的參數：工具名稱 → 需要的 ctx 欄位
@@ -24,7 +25,9 @@ LIMITS = {
     "radius_m": (100, 20000),
     "lat": (-90, 90),
     "lng": (-180, 180),
+    "distance_km": (0, 1000),
 }
+MAX_ITEMS = {"locations": (2, 8)}
 MAX_STR = 100
 
 
@@ -56,6 +59,17 @@ def _coerce(name: str, spec: dict, value):
         lo, hi = LIMITS.get(name, (-math.inf, math.inf))
         num = min(max(num, lo), hi)
         return int(num) if t == "integer" else num
+    if t == "array":
+        if isinstance(value, str):                 # 小模型有時給逗號分隔的字串
+            value = [v for v in value.replace("，", ",").split(",")]
+        if not isinstance(value, list):
+            raise ToolArgError(f"{name} 應為陣列")
+        items = [_coerce(name, spec.get("items", {}), v) for v in value if v not in (None, "")]
+        lo, hi = MAX_ITEMS.get(name, (0, 20))
+        items = items[:hi]
+        if len(items) < lo:
+            raise ToolArgError(f"{name} 至少需要 {lo} 個")
+        return items
     raise ToolArgError(f"不支援的參數型別：{name}")
 
 

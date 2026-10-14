@@ -8,7 +8,7 @@ from . import config
 
 # num_predict：回覆長度上限，避免小模型不停重複。
 # repeat_penalty=1.0（關閉）：清單裡地名本來就會重複（例如多個「礁溪」），懲罰重複會讓模型把地名寫錯字
-CHAT_OPTIONS = {"temperature": 0.3, "num_ctx": 4096, "num_predict": 320, "repeat_penalty": 1.0}
+CHAT_OPTIONS = {"temperature": 0.2, "num_ctx": 4096, "num_predict": 320, "repeat_penalty": 1.0}
 KEEP_ALIVE = "30m"   # 模型留在記憶體 30 分鐘，避免每次重新載入
 
 

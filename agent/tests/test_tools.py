@@ -181,7 +181,8 @@ def test_long_string_truncated():
 
 def test_tools_are_read_only():
     names = {t["function"]["name"] for t in ollama_tools()}
-    assert names == {"search_locations", "get_location", "nearby_locations", "get_site_help"}
+    assert names == {"search_locations", "get_location", "nearby_locations", "plan_route",
+                     "estimate_carbon", "get_site_help"}
     for bad in ("stamp", "unlock", "redeem", "update", "delete", "write"):
         assert not any(bad in n for n in names)
 

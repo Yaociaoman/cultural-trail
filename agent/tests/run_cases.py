@@ -60,6 +60,11 @@ async def run_case(case: dict) -> tuple[bool, list[str], dict, float]:
             problems.append(f"回覆不應包含：{w!r}")
     if case.get("expect_locations") and not out["locations"]:
         problems.append("應回傳可點擊的地點")
+    if case.get("expect_route"):
+        if not out["route"]:
+            problems.append("應回傳 route")
+        elif "📊" not in reply:
+            problems.append("缺少系統路線摘要")
     bad = [i for i in out["locations"] if not data.get_by_id(i)]
     if bad:
         problems.append(f"回傳了不存在的地點 id：{bad}")
@@ -85,6 +90,9 @@ async def main() -> None:
         print(f"\n{'✅' if ok else '❌'} 案例 {c['id']}（{sec:.1f}s）{c['input']}")
         print(f"   工具：{out['tools']}　地點：{[data.get_by_id(i)['name'] for i in out['locations']]}")
         print("   回覆：" + out["reply"].replace("\n", "\n         "))
+        if out["route"]:
+            r = out["route"]
+            print(f"   路線：{[(l['km'], l['suggested']) for l in r['legs']]}　建議 {r['suggested_kgCO2e']} kg／自駕 {r['car_kgCO2e']} kg")
         for p in problems:
             print(f"   ⚠ {p}")
     print(f"\n通過 {passed}/{len(cases)}")
