@@ -3,12 +3,13 @@
 啟動：cd agent && source .venv/bin/activate && uvicorn app.main:app --port 8787
 """
 import asyncio
+import json
 import logging
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import agent, config, data, ollama_client
@@ -140,3 +141,49 @@ async def chat(req: ChatRequest, request: Request):
         return error_response(503, "AI 回應逾時", "timeout")
     except ollama_client.OllamaError:
         return error_response(503, "AI 服務暫時無法使用", "ollama_unavailable")
+
+
+def _line(event: dict) -> bytes:
+    return (json.dumps(event, ensure_ascii=False) + "\n").encode("utf-8")
+
+
+@app.post("/chat/stream")
+async def chat_stream(req: ChatRequest, request: Request):
+    """串流版 /chat：每行一個 JSON（NDJSON）。
+    {"type":"text","text":目前文字（已經過 guard 檢查）} … {"type":"done", …完整回覆} 或 {"type":"error","code":…}"""
+    if not chat_rate.allow(client_key(request)):
+        return error_response(429, "請求太頻繁，請稍後再試", "rate_limited")
+
+    async def events():
+        queue: asyncio.Queue = asyncio.Queue()
+
+        async def on_preview(text: str) -> None:
+            await queue.put({"type": "text", "text": text})
+
+        async def work() -> None:
+            try:
+                async with chat_slots:
+                    result = await agent.run_agent(req, on_preview=on_preview)
+                await queue.put({"type": "done", **result})
+            except Busy:
+                await queue.put({"type": "error", "code": "busy"})
+            except asyncio.TimeoutError:
+                await queue.put({"type": "error", "code": "timeout"})
+            except ollama_client.OllamaError:
+                await queue.put({"type": "error", "code": "ollama_unavailable"})
+            except Exception:
+                log.exception("串流處理失敗")
+                await queue.put({"type": "error", "code": "internal"})
+
+        task = asyncio.create_task(work())
+        try:
+            while True:
+                event = await queue.get()
+                yield _line(event)
+                if event["type"] in ("done", "error"):
+                    break
+        finally:
+            task.cancel()     # 使用者關掉頁面或中斷連線時，停止模型生成，釋放名額
+
+    return StreamingResponse(events(), media_type="application/x-ndjson",
+                             headers={"X-Accel-Buffering": "no"})   # 避免通道／代理伺服器把串流整包緩衝

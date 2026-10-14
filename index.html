@@ -486,6 +486,8 @@
         .chat-demo-tag.online  { color:#7fd1b9; border-color:#7fd1b9; border-style:solid; }
         .chat-demo-tag.offline { color:rgba(245,240,232,0.6); border-color:rgba(245,240,232,0.4); }
         .chat-line + .chat-line { margin-top:0.25rem; }
+        .chat-bubble.streaming { white-space:pre-wrap; }
+        .chat-bubble.streaming::after { content:'▍'; opacity:0.5; animation:typingDot 1s infinite; }
         .chat-route { margin-top:0.5rem; padding:0.5rem 0.7rem; border:1px dashed var(--stamp-gold); border-radius:6px; font-size:0.74rem; background:rgba(201,148,58,0.08); }
         .chat-locs { display:flex; flex-wrap:wrap; align-items:center; gap:0.35rem; margin-top:0.5rem; }
         .chat-locs-label { font-size:0.68rem; opacity:0.65; }
@@ -2197,20 +2199,46 @@ function offlineReply(text, lang) {
     return { reply: pick(hit.reply), chips: pick(hit.chips), html: true, source: 'offline' };
 }
 
-async function agentReply(text, lang) {
+// 串流：/chat/stream 每行一個 JSON。text = 目前文字（伺服器已檢查過）；done = 完整回覆；error = 失敗
+async function agentReply(text, lang, onPartial) {
     const context = await getNearbyContext(text);
-    const res = await fetchWithTimeout(`${AGENT_BASE_URL}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            messages: chatHistory.slice(-CHAT_HISTORY_MAX),
-            lang,
-            ...(context ? { context } : {}),
-        }),
-    }, AGENT_CHAT_TIMEOUT_MS);
-    if (!res.ok) throw new Error('agent HTTP ' + res.status);
-    const body = await res.json();
-    if (typeof body.reply !== 'string') throw new Error('agent bad response');
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), AGENT_CHAT_TIMEOUT_MS);   // 計時涵蓋整段串流，不只是連線
+    let body = null;
+    try {
+        const res = await fetch(`${AGENT_BASE_URL}/chat/stream`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: chatHistory.slice(-CHAT_HISTORY_MAX),
+                lang,
+                ...(context ? { context } : {}),
+            }),
+            signal: ctrl.signal,
+        });
+        if (!res.ok || !res.body) throw new Error('agent HTTP ' + res.status);
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (!body) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let nl;
+            while ((nl = buffer.indexOf('\n')) >= 0) {
+                const line = buffer.slice(0, nl).trim();
+                buffer = buffer.slice(nl + 1);
+                if (!line) continue;
+                const event = JSON.parse(line);
+                if (event.type === 'text' && typeof event.text === 'string') onPartial?.(event.text);
+                else if (event.type === 'error') throw new Error('agent ' + event.code);
+                else if (event.type === 'done') { body = event; break; }
+            }
+        }
+    } finally {
+        clearTimeout(timer);
+    }
+    if (!body || typeof body.reply !== 'string') throw new Error('agent bad response');
     return {
         reply: body.reply,
         chips: Array.isArray(body.chips) ? body.chips.filter(c => typeof c === 'string').slice(0, 6) : [],
@@ -2222,14 +2250,15 @@ async function agentReply(text, lang) {
 }
 
 // 介面維持 getReply(text) → { reply, chips }（另外多帶 locations、html、source 等欄位）
-async function getReply(text) {
+// onPartial（選填）：串流時每收到一段已檢查的文字就呼叫一次
+async function getReply(text, onPartial) {
     const lang = chatLang(text);
     chatHistory.push({ role: 'user', content: text });
 
     if (!agentOnline && Date.now() - agentCheckedAt > AGENT_RECHECK_MS) await checkAgent();
     if (agentOnline) {
         try {
-            const res = await agentReply(text, lang);
+            const res = await agentReply(text, lang, onPartial);
             chatHistory.push({ role: 'assistant', content: res.reply });
             return res;
         } catch (e) {
@@ -2386,8 +2415,10 @@ async function sendChat(presetText) {
     addChatMsg('user', text, false);
     const typingRow = addChatMsg('bot', '<span class="typing"><span></span><span></span><span></span></span>');
     const bubble = typingRow.querySelector('.chat-bubble');
-    // Agent 回答需要一點時間：超過 4 秒就提示一下，避免以為當機
+    // Agent 回答需要一點時間：超過 4 秒還沒出字就提示一下，避免以為當機
+    let streaming = false;
     const slowHint = setTimeout(() => {
+        if (streaming) return;
         const hint = document.createElement('span');
         hint.className = 'chat-note';
         hint.textContent = t(lang, 'thinking');
@@ -2395,8 +2426,16 @@ async function sendChat(presetText) {
     }, 4000);
 
     try {
-        const res = await getReply(text);
+        // 串流中：用純文字（textContent）邊收邊顯示，完成後再換成有清單、地點按鈕的正式版本
+        const res = await getReply(text, partial => {
+            streaming = true;
+            bubble.classList.add('streaming');
+            bubble.textContent = partial;
+            const box = document.getElementById('chatMessages');
+            box.scrollTop = box.scrollHeight;
+        });
         clearTimeout(slowHint);
+        bubble.classList.remove('streaming');
         if (res.html) {
             bubble.innerHTML = res.reply;          // 只有離線版固定內容
         } else {
@@ -2412,6 +2451,7 @@ async function sendChat(presetText) {
         setChatChips(res.chips);
     } catch (e) {
         clearTimeout(slowHint);
+        bubble.classList.remove('streaming');
         bubble.textContent = t(lang, 'error');
         setChatChips(DEFAULT_CHIPS_I18N[lang]);
     } finally {

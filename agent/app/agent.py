@@ -30,10 +30,10 @@ FORCE_ANSWER = {
 }
 
 DEFAULT_CHIPS = {
-    "zh-TW": ["這個網站怎麼使用？", "如何解鎖集章？", "宜蘭溫泉推薦", "我附近有什麼？"],
-    "en": ["How do I use this site?", "How do I unlock stamps?", "Hot springs in Yilan", "What's near me?"],
-    "ja": ["このサイトの使い方は？", "スタンプの集め方は？", "宜蘭の温泉は？", "近くに何がある？"],
-    "de": ["Wie benutze ich die Seite?", "Wie sammle ich Stempel?", "Heiße Quellen in Yilan", "Was ist in meiner Nähe?"],
+    "zh-TW": ["這個網站怎麼使用？", "如何解鎖集章？", "台中有什麼夜市？", "我附近有什麼？"],
+    "en": ["How do I use this site?", "How do I unlock stamps?", "Night markets in Taichung", "What's near me?"],
+    "ja": ["このサイトの使い方は？", "スタンプの集め方は？", "台中の夜市は？", "近くに何がある？"],
+    "de": ["Wie benutze ich die Seite?", "Wie sammle ich Stempel?", "Nachtmärkte in Taichung", "Was ist in meiner Nähe?"],
 }
 
 
@@ -101,7 +101,17 @@ def _collect_ids(result: dict) -> list[str]:
     return ids
 
 
-async def _loop(req: ChatRequest, used_tools: list[str], found: dict) -> str:
+async def _model(messages: list[dict], tool_defs, max_tokens, on_text) -> dict:
+    """呼叫模型：有 on_text（串流模式）就邊收邊回報，否則一次取得完整回覆。"""
+    if on_text is None:
+        return await ollama_client.chat(messages, tool_defs, max_tokens=max_tokens)
+    msg = await ollama_client.chat_stream(messages, tool_defs, max_tokens=max_tokens, on_content=on_text)
+    if msg.get("tool_calls") and msg.get("content"):
+        await on_text("")     # 這一輪其實是工具呼叫：把剛剛顯示的文字清掉
+    return msg
+
+
+async def _loop(req: ChatRequest, used_tools: list[str], found: dict, on_text=None) -> str:
     ctx = req.context
     messages = [{"role": "system",
                  "content": build_system_prompt(req.lang, ctx.lat if ctx else None, ctx.lng if ctx else None)}]
@@ -139,7 +149,7 @@ async def _loop(req: ChatRequest, used_tools: list[str], found: dict) -> str:
     max_tokens = SHORT_ANSWER_TOKENS if req.lang in SHORT_ANSWER_LANGS else None
 
     for _ in range(MAX_TOOL_ROUNDS):
-        msg = await ollama_client.chat(messages + lang_reminder, tool_defs, max_tokens=max_tokens)
+        msg = await _model(messages + lang_reminder, tool_defs, max_tokens, on_text)
         calls = msg.get("tool_calls") or []
         if not calls:
             return msg.get("content", "")
@@ -147,7 +157,7 @@ async def _loop(req: ChatRequest, used_tools: list[str], found: dict) -> str:
 
     # 超過工具呼叫上限：不給工具，強制用現有資料回答
     messages.append({"role": "system", "content": FORCE_ANSWER.get(req.lang, FORCE_ANSWER["zh-TW"])})
-    msg = await ollama_client.chat(messages, None, max_tokens=max_tokens)
+    msg = await _model(messages, None, max_tokens, on_text)
     return msg.get("content", "")
 
 
@@ -176,9 +186,9 @@ async def _fix_language(text: str, lang: str, names: list[str]) -> str:
     return restore_names(msg.get("content", "") or protected, tokens)
 
 
-async def _answer(req: ChatRequest, used_tools: list[str], found: dict) -> str:
+async def _answer(req: ChatRequest, used_tools: list[str], found: dict, on_text=None) -> str:
     started = time.monotonic()
-    raw = await _loop(req, used_tools, found)
+    raw = await _loop(req, used_tools, found, on_text)
     time_left = TOTAL_TIMEOUT - (time.monotonic() - started)
     names = [loc["name"] for i in dict.fromkeys(found["ids"]) if (loc := data.get_by_id(i))]
     if wrong_language(raw, req.lang, names) and time_left >= REWRITE_MIN_SECONDS:
@@ -206,13 +216,23 @@ def _public_route(route: dict | None) -> dict | None:
     }
 
 
-async def run_agent(req: ChatRequest) -> dict:
-    """執行 Agent；Ollama 連不上或逾時時丟出 OllamaError / asyncio.TimeoutError。"""
+async def run_agent(req: ChatRequest, on_preview=None) -> dict:
+    """執行 Agent；Ollama 連不上或逾時時丟出 OllamaError / asyncio.TimeoutError。
+    on_preview（串流用）：模型邊寫，就把「已經過 guard 檢查」的目前文字傳出去。"""
     started = time.monotonic()
     used_tools: list[str] = []
     found: dict = {"ids": [], "route": None}   # 工具查到的地點 id 與路線
+    on_text = None
+    if on_preview is not None:
+        last_sent = [None]
+
+        async def on_text(raw: str) -> None:
+            text = guard.preview(raw, req.lang, found["ids"], found["route"] is not None)
+            if text != last_sent[0]:
+                last_sent[0] = text
+                await on_preview(text)
     try:
-        raw = await asyncio.wait_for(_answer(req, used_tools, found), TOTAL_TIMEOUT)
+        raw = await asyncio.wait_for(_answer(req, used_tools, found, on_text), TOTAL_TIMEOUT)
     finally:
         # 隱私：日誌只記錄耗時與工具名稱，不記錄對話內容與位置
         log.info("chat done in %.1fs, tools=%s", time.monotonic() - started, used_tools)

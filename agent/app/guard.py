@@ -203,6 +203,15 @@ def fix_list_names(reply: str, candidate_ids: list[str]) -> str:
     return "\n".join(out)
 
 
+def preview(raw: str, lang: str, candidate_ids: list[str], has_route: bool) -> str:
+    """串流途中送給前端的文字：跟最終回覆一樣先經過檢查（HTML、網址、外洩、程式碼、地名…），
+    沒檢查過的模型輸出不會出現在畫面上。路線問題的數字由最後的系統摘要提供，這裡先拿掉含數字的句子。"""
+    text = fix_list_names(clean_reply(raw, lang), candidate_ids)
+    if has_route:
+        text = "".join(s for s in _SENTENCE.findall(text) if not _NUMBER_WITH_UNIT.search(s))
+    return text.strip()
+
+
 def mentioned_locations(reply: str, candidate_ids: list[str]) -> list[str]:
     """候選 id（來自工具結果）中，存在於資料集、且名稱有出現在回覆裡的，依出現順序排列。"""
     found = []

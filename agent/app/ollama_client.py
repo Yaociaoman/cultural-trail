@@ -1,4 +1,5 @@
 """與 Ollama 通訊。"""
+import json
 import logging
 import time
 
@@ -58,3 +59,42 @@ async def chat(messages: list[dict], tools: list[dict] | None = None, timeout: f
     if not isinstance(message, dict):
         raise OllamaError("bad response")
     return message
+
+
+async def chat_stream(messages: list[dict], tools: list[dict] | None = None, timeout: float = 45.0,
+                      max_tokens: int | None = None, on_content=None) -> dict:
+    """串流呼叫 /api/chat：每收到一段文字就呼叫 on_content(目前累積的全文)；回傳完整 message。"""
+    payload = {
+        "model": config.OLLAMA_MODEL,
+        "messages": messages,
+        "stream": True,
+        "options": {**CHAT_OPTIONS, **({"num_predict": max_tokens} if max_tokens else {})},
+        "keep_alive": KEEP_ALIVE,
+    }
+    if tools:
+        payload["tools"] = tools
+    started = time.monotonic()
+    content, tool_calls = "", []
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            async with client.stream("POST", f"{config.OLLAMA_HOST}/api/chat", json=payload) as res:
+                res.raise_for_status()
+                async for line in res.aiter_lines():
+                    if not line.strip():
+                        continue
+                    chunk = json.loads(line)
+                    msg = chunk.get("message") or {}
+                    if msg.get("tool_calls"):
+                        tool_calls += msg["tool_calls"]
+                    piece = msg.get("content") or ""
+                    if piece:
+                        content += piece
+                        if on_content:
+                            await on_content(content)
+                    if chunk.get("done"):
+                        log.info("ollama(stream) %.1fs prompt=%s gen=%s", time.monotonic() - started,
+                                 chunk.get("prompt_eval_count"), chunk.get("eval_count"))
+                        break
+    except (httpx.HTTPError, ValueError) as e:
+        raise OllamaError(type(e).__name__) from e
+    return {"role": "assistant", "content": content, "tool_calls": tool_calls}
