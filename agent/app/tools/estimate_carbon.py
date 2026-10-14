@@ -8,8 +8,8 @@ SCHEMA = {
         "type": "object",
         "properties": {
             "distance_km": {"type": "number", "description": "距離（公里）"},
-            "mode": {"type": "string", "enum": carbon.MODES,
-                     "description": "walk 步行、bicycle 腳踏車、train 臺鐵、hsr 高鐵、bus 公車客運、motorcycle 機車、car 自駕"},
+            "mode": {"type": "string", "enum": carbon.modes(),
+                     "description": "walk 步行、bicycle 腳踏車、bus 公車客運、train 臺鐵、hsr 高鐵、motorcycle 機車、car 自駕"},
         },
         "required": ["distance_km", "mode"],
     },

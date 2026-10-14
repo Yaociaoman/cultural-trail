@@ -1,5 +1,8 @@
-"""碳排計算與交通方式判斷（docs/agent-spec.md §7）。
+"""碳排計算與交通方式判斷。
 
+係數與設定和地圖頁共用同一份（carbon/carbon-factors.json、carbon/carbon-config.json），
+改數字只要改那裡。Agent 只列出各交通方式的大約碳排，**不挑「建議」方式**：
+建議由地圖頁的「我的行程」依時間與碳排的固定規則產生，兩邊才不會給出不同答案。
 數字一律由這裡計算，模型只負責敘述。
 """
 import json
@@ -7,65 +10,76 @@ from functools import lru_cache
 
 from . import config
 
-FACTORS_PATH = config.AGENT_DIR / "config" / "carbon_factors.json"
+CARBON_DIR = config.AGENT_DIR.parent / "carbon"
+FACTORS_PATH = CARBON_DIR / "carbon-factors.json"
+CONFIG_PATH = CARBON_DIR / "carbon-config.json"
 
-DETOUR = 1.3   # 直線距離 × 繞路係數 = 估算路程
 
-# 捷運：官方碳足跡資料沒有係數，依使用者決定暫不列入
-MODES = ["walk", "bicycle", "train", "hsr", "bus", "motorcycle", "car"]
-
-# 單段距離限制（公里）：(最短, 最長)；None 代表不限
-MODE_RANGE = {
-    "walk": (None, 2),
-    "bicycle": (None, 8),
-    "train": (10, None),   # 太短的距離搭火車不實際
-    "hsr": (40, None),
-}
-
-# 高鐵沿線縣市（西部走廊；兩端都在這些縣市且跨縣市才建議高鐵）
-HSR_CITIES = {"臺北市", "新北市", "桃園市", "新竹縣", "新竹市", "苗栗縣", "臺中市", "彰化縣",
-              "雲林縣", "嘉義縣", "嘉義市", "臺南市", "高雄市"}
-# 離島：沒有臺鐵，跟本島之間也沒有陸路
-ISLANDS = {"金門縣", "澎湖縣", "連江縣"}
+@lru_cache(maxsize=1)
+def settings() -> dict:
+    return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
 @lru_cache(maxsize=1)
 def factors() -> dict[str, float]:
+    """可用的交通方式 → kg CO2e／人·公里（官方為每人基準；available=false 的不列入，例如捷運）。"""
     raw = json.loads(FACTORS_PATH.read_text(encoding="utf-8"))["factors"]
-    return {mode: float(v["kg"]) for mode, v in raw.items()}
+    return {mode: f["gCO2e"] / 1000 for mode, f in raw.items()
+            if f.get("available") and f.get("basis") == "per_passenger_km" and f.get("gCO2e") is not None}
+
+
+def modes() -> list[str]:
+    """依設定檔的順序，只留有係數的交通方式。"""
+    return [m for m in settings()["modes"] if m in factors()]
+
+
+def road_km_raw(straight_m: float) -> float:
+    """估算路程（公里）= 直線距離 × 繞路係數（與地圖頁相同），不四捨五入"""
+    return straight_m / 1000 * settings()["detourFactor"]
 
 
 def road_km(straight_m: float) -> float:
-    return round(straight_m / 1000 * DETOUR, 1)
+    return round(road_km_raw(straight_m), 1)
 
 
 def kg(mode: str, km: float) -> float:
-    return round(factors()[mode] * km, 3)
+    return round(factors()[mode] * max(km, 0), 3)
 
 
-def crosses_sea(city_a: str, city_b: str) -> bool:
-    return city_a != city_b and (city_a in ISLANDS or city_b in ISLANDS)
+def landmass(lat: float, lng: float) -> str:
+    """離島回傳其 id，其餘視為本島 main（範圍見 carbon-config.json 的 landmasses）。"""
+    for m in settings()["landmasses"]:
+        min_lat, min_lng, max_lat, max_lng = m["bbox"]
+        if min_lat <= lat <= max_lat and min_lng <= lng <= max_lng:
+            return m["id"]
+    return "main"
 
 
-def feasible_modes(km: float, city_a: str = "", city_b: str = "") -> list[str]:
-    """這段距離可以用哪些交通方式（由程式決定，不是模型）。跨海（離島↔本島）回傳空清單。"""
-    if crosses_sea(city_a, city_b):
+def _in_range(km: float, r: dict | None) -> bool:
+    if not r:
+        return True
+    if r.get("min") is not None and km < r["min"]:
+        return False
+    if r.get("max") is not None and km > r["max"]:
+        return False
+    return True
+
+
+def feasible_modes(km: float, a: tuple[float, float] | None = None, b: tuple[float, float] | None = None) -> list[str]:
+    """這段距離可以用哪些交通方式（只依距離範圍與離島規則，同地圖頁沒有車站資料時的判斷）。
+    a、b 為 (lat, lng)；跨海（本島↔離島）回傳空清單。"""
+    cfg = settings()
+    land_a = landmass(*a) if a else "main"
+    land_b = landmass(*b) if b else "main"
+    if land_a != land_b:
         return []
     out = []
-    for mode in MODES:
-        lo, hi = MODE_RANGE.get(mode, (None, None))
-        if (lo is not None and km < lo) or (hi is not None and km > hi):
+    for mode in modes():
+        if land_a != "main" and mode in cfg.get("mainOnlyModes", []):
             continue
-        if mode == "hsr" and not (city_a in HSR_CITIES and city_b in HSR_CITIES and city_a != city_b):
+        if mode in cfg.get("mvpHiddenModes", []):
             continue
-        if mode == "train" and (city_a in ISLANDS or city_b in ISLANDS):
-            continue
-        out.append(mode)
+        if _in_range(km, cfg["rangeKm"].get(mode)):
+            out.append(mode)
     return out
 
-
-def suggest(modes: list[str]) -> str | None:
-    """可行方式中碳排最低的；同樣是 0（步行、腳踏車）時優先步行。"""
-    if not modes:
-        return None
-    return min(modes, key=lambda m: (factors()[m], MODES.index(m)))

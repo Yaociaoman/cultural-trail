@@ -202,17 +202,15 @@ async def _answer(req: ChatRequest, used_tools: list[str], found: dict, on_text=
 
 
 def _public_route(route: dict | None) -> dict | None:
-    """回給前端的路線（規格 §6.3 格式，加上建議交通方式與名稱）。"""
+    """回給前端的路線：各段距離與各交通方式的大約碳排（不含建議；建議由地圖頁「我的行程」產生）。"""
     if not route:
         return None
     return {
         "order": route["order"],
-        "legs": [{"from": l["from"], "to": l["to"], "km": l["km"], "est": True, "suggested": l["suggested"]}
+        "legs": [{"from": l["from"], "to": l["to"], "km": l["km"], "est": True, "modes": l["modes"]}
                  for l in route["legs"]],
-        "carbon": route["carbon"],
-        "suggested_kgCO2e": route["suggested_kgCO2e"],
+        "total_km": route["total_km"],
         "car_kgCO2e": route["car_kgCO2e"],
-        "saved_vs_car_kgCO2e": route["saved_vs_car_kgCO2e"],
     }
 
 

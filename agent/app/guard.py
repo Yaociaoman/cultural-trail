@@ -7,7 +7,7 @@
 - 偵測系統提示詞外洩、程式碼（不協助與旅遊無關的事）
 - 繁中回覆把常見簡體字轉成繁體
 - 只回傳資料集中真的存在、且回覆中有提到的地點 id
-- 有路線時附上系統計算的摘要，並刪除模型自己寫的距離／碳排數字（數字以工具結果為準）
+- 有路線時附上系統計算的摘要（各方式碳排，不挑建議）與地圖頁「我的行程」的引導，並刪除模型自己寫的距離／碳排數字
 """
 import re
 from difflib import SequenceMatcher
@@ -88,35 +88,50 @@ def clean_reply(text: str, lang: str) -> str:
 # 回覆中「數字＋單位」：距離與碳排
 _NUMBER_WITH_UNIT = re.compile(r"\d+(?:[.,]\d+)?\s*(?:公里|公尺|公斤|kilomet|km|kg|キロ|㎞|㎏)", re.IGNORECASE)
 
+# 交通方式名稱與地圖頁（carbon/strings.js）一致
 MODE_NAMES = {
-    "zh-TW": {"walk": "步行", "bicycle": "腳踏車", "train": "臺鐵", "hsr": "高鐵",
-              "bus": "公車／客運", "motorcycle": "機車", "car": "自駕"},
-    "en": {"walk": "walking", "bicycle": "cycling", "train": "train", "hsr": "high-speed rail",
-           "bus": "bus", "motorcycle": "scooter", "car": "car"},
-    "ja": {"walk": "徒歩", "bicycle": "自転車", "train": "台湾鉄道", "hsr": "高速鉄道",
-           "bus": "バス", "motorcycle": "バイク", "car": "車"},
-    "de": {"walk": "zu Fuß", "bicycle": "Fahrrad", "train": "Zug", "hsr": "Schnellzug",
-           "bus": "Bus", "motorcycle": "Motorroller", "car": "Auto"},
+    "zh-TW": {"walk": "步行", "bicycle": "腳踏車", "bus": "公車", "train": "臺鐵", "hsr": "高鐵",
+              "motorcycle": "機車", "car": "汽車"},
+    "en": {"walk": "Walk", "bicycle": "Bicycle", "bus": "Bus", "train": "TRA train", "hsr": "High Speed Rail",
+           "motorcycle": "Scooter", "car": "Car"},
+    "ja": {"walk": "徒歩", "bicycle": "自転車", "bus": "バス", "train": "台湾鉄道", "hsr": "台湾高速鉄道",
+           "motorcycle": "バイク", "car": "自動車"},
+    "de": {"walk": "Zu Fuß", "bicycle": "Fahrrad", "bus": "Bus", "train": "Bahn (TRA)", "hsr": "Hochgeschwindigkeitszug",
+           "motorcycle": "Motorroller", "car": "Auto"},
 }
 
+# Agent 只列出各方式的大約碳排，不挑建議；建議與時間比較請旅客到地圖頁「我的行程」（按鈕名稱與地圖頁一致）
 ROUTE_TEXT = {
-    "zh-TW": {"title": "📊 路線（系統估算）", "leg": "{i}. {a} → {b}：約 {km} 公里，建議{mode}",
+    "zh-TW": {"title": "📊 各段交通方式碳排（系統估算，每人）", "leg": "{i}. {a} → {b}：約 {km} 公里｜{modes}",
+              "mode": "{name} {kg} 公斤", "sep": "、",
               "sea": "{i}. {a} → {b}：跨海，需搭飛機或船（不計入碳排）",
-              "total": "全程約 {km} 公里；建議方式碳排約 {kg} 公斤 CO2e，自駕約 {car} 公斤，可少排 {saved} 公斤。",
-              "est": "距離為直線距離 ×1.3 的估算，碳排依環境部係數估算（每人）。"},
-    "en": {"title": "📊 Route (system estimate)", "leg": "{i}. {a} → {b}: about {km} km, suggested: {mode}",
+              "total": "全程約 {km} 公里；若全程開車約 {car} 公斤 CO2e。",
+              "est": "距離為直線距離 ×1.3 的估算，碳排依環境部係數估算。",
+              "map": "想比較時間、選擇人數、看每一段的建議，請到地圖頁的「我的行程」，把景點「加入行程」後按「查詢路線」。"},
+    "en": {"title": "📊 Carbon by mode for each leg (system estimate, per person)", "leg": "{i}. {a} → {b}: about {km} km | {modes}",
+           "mode": "{name} {kg} kg", "sep": ", ",
            "sea": "{i}. {a} → {b}: crosses the sea, needs a flight or ferry (not counted)",
-           "total": "Total about {km} km; suggested modes ≈ {kg} kg CO2e vs. car ≈ {car} kg, saving {saved} kg.",
-           "est": "Distances are straight-line ×1.3 estimates; carbon per person uses official Taiwan factors."},
-    "ja": {"title": "📊 ルート（システム推定）", "leg": "{i}. {a} → {b}：約{km}km、おすすめ：{mode}",
+           "total": "Total about {km} km; driving the whole way ≈ {car} kg CO2e.",
+           "est": "Distances are straight-line ×1.3 estimates; carbon uses official Taiwan factors.",
+           "map": "To compare travel times, set the number of travellers and see a suggestion for each leg, open My Trip on the map: tap “Add to trip” on each place, then “Find routes”."},
+    "ja": {"title": "📊 区間ごとの交通手段別 CO2（システム推定・1 人あたり）", "leg": "{i}. {a} → {b}：約{km}km｜{modes}",
+           "mode": "{name} {kg}kg", "sep": "、",
            "sea": "{i}. {a} → {b}：海を渡るため飛行機か船が必要（CO2 は計算外）",
-           "total": "合計 約{km}km；おすすめの移動で CO2 約{kg}kg、車は約{car}kg、{saved}kg 削減。",
-           "est": "距離は直線距離×1.3 の推定、CO2 は台湾環境部の係数による 1 人あたりの推定です。"},
-    "de": {"title": "📊 Route (Systemschätzung)", "leg": "{i}. {a} → {b}: ca. {km} km, empfohlen: {mode}",
+           "total": "合計 約{km}km；全区間を自動車で移動すると約{car}kg CO2e。",
+           "est": "距離は直線距離×1.3 の推定、CO2 は台湾環境部の係数による推定です。",
+           "map": "所要時間の比較や人数の設定、区間ごとのおすすめは、地図ページの「マイ旅程」で確認できます。スポットを「旅程に追加」して「ルート検索」を押してください。"},
+    "de": {"title": "📊 CO2 je Verkehrsmittel und Abschnitt (Systemschätzung, pro Person)", "leg": "{i}. {a} → {b}: ca. {km} km | {modes}",
+           "mode": "{name} {kg} kg", "sep": ", ",
            "sea": "{i}. {a} → {b}: über das Meer, Flug oder Fähre nötig (nicht berechnet)",
-           "total": "Insgesamt ca. {km} km; empfohlene Verkehrsmittel ≈ {kg} kg CO2e, Auto ≈ {car} kg, Ersparnis {saved} kg.",
-           "est": "Entfernungen: Luftlinie ×1,3 (Schätzung); CO2 pro Person nach offiziellen Faktoren Taiwans."},
+           "total": "Insgesamt ca. {km} km; nur mit dem Auto ≈ {car} kg CO2e.",
+           "est": "Entfernungen: Luftlinie ×1,3 (Schätzung); CO2 nach offiziellen Faktoren Taiwans.",
+           "map": "Fahrzeiten vergleichen, Personenzahl wählen und Empfehlungen je Abschnitt sehen: Öffne „Meine Reise“ auf der Karte, füge die Orte mit „Zur Reise hinzufügen“ hinzu und tippe auf „Routen suchen“."},
 }
+
+
+def _kg(x: float) -> str:
+    """0 → 0、0.891 → 0.89、1.0 → 1"""
+    return f"{x:.2f}".rstrip("0").rstrip(".")
 
 
 def route_summary(route: dict, lang: str) -> str:
@@ -124,17 +139,16 @@ def route_summary(route: dict, lang: str) -> str:
     names = MODE_NAMES.get(lang, MODE_NAMES["zh-TW"])
     lines = [t["title"]]
     for i, leg in enumerate(route["legs"], 1):
-        if leg.get("suggested"):
-            lines.append(t["leg"].format(i=i, a=leg["from_name"], b=leg["to_name"], km=leg["km"],
-                                         mode=names[leg["suggested"]]))
+        if leg.get("modes"):
+            modes = t["sep"].join(t["mode"].format(name=names.get(m["mode"], m["mode"]), kg=_kg(m["kgCO2e"]))
+                                  for m in leg["modes"])
+            lines.append(t["leg"].format(i=i, a=leg["from_name"], b=leg["to_name"], km=leg["km"], modes=modes))
         else:
             lines.append(t["sea"].format(i=i, a=leg["from_name"], b=leg["to_name"]))
-    lines.append(t["total"].format(km=route["total_km"], kg=round(route["suggested_kgCO2e"], 2),
-                                   car=round(route["car_kgCO2e"], 2), saved=round(route["saved_vs_car_kgCO2e"], 2)))
+    lines.append(t["total"].format(km=route["total_km"], car=_kg(route["car_kgCO2e"])))
     lines.append(t["est"])
+    lines.append(t["map"])
     return "\n".join(lines)
-
-
 
 
 def finalize_route(reply: str, route: dict | None, lang: str) -> str:

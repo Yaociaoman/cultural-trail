@@ -270,7 +270,7 @@ def test_route_in_response(client, monkeypatch):
     body = ask(client, "安平古堡到林百貨怎麼去比較環保？").json()
     route = body["route"]
     assert route["order"] == ["A_TN_1", "A_TN_2"] and route["legs"][0]["est"] is True
-    assert {"from", "to", "km", "est", "suggested"} <= set(route["legs"][0])
+    assert {"from", "to", "km", "est", "modes"} <= set(route["legs"][0]) and "suggested" not in route["legs"][0]
     assert "📊" in body["reply"]          # 模型的 999 公里與工具不符 → 附上系統計算
     assert body["locations"] == ["A_TN_1", "A_TN_2"]
 

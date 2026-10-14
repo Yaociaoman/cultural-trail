@@ -1,4 +1,7 @@
-"""plan_route：多個地點的參觀順序、各段距離與各交通方式碳排。"""
+"""plan_route：多個地點依使用者提到的順序，計算各段距離與各交通方式的大約碳排。
+
+不挑「建議」方式，也不重新排序：建議由地圖頁「我的行程」依時間與碳排產生（與地圖頁一致）。
+"""
 import re
 
 from .. import carbon, data
@@ -7,22 +10,23 @@ from ..geo import haversine_m
 SCHEMA = {
     "name": "plan_route",
     "description": (
-        "安排 2 到 8 個地點的參觀順序，計算各段距離、建議的低碳交通方式，以及各交通方式的碳排比較。"
-        "使用者要求路線、行程順序、怎麼去比較環保、碳排時使用。"
+        "依使用者提到的順序，計算 2 到 8 個地點之間各段的距離，以及各交通方式每人的大約碳排。"
+        "使用者問路線、怎麼去比較環保、碳排時使用。"
         "locations 可以填地點 id（來自 search_locations），或資料中的正式地點名稱。"
     ),
     "parameters": {
         "type": "object",
         "properties": {
             "locations": {"type": "array", "items": {"type": "string"},
-                          "description": "2 到 8 個地點 id 或正式名稱，第一個是出發點"},
+                          "description": "2 到 8 個地點 id 或正式名稱，依使用者提到的順序，第一個是出發點"},
         },
         "required": ["locations"],
     },
 }
 
 NOTE = ("Distances are straight-line x1.3 estimates. Carbon is per person, estimated with official "
-        "factors (kg CO2e per person-km). Always tell the user these are estimates.")
+        "factors (kg CO2e per person-km). Always tell the user these are estimates. Do not pick a 'best' mode; "
+        "tell the user to use My Trip on the map page (Add to trip -> Find routes) to compare time and see suggestions.")
 
 
 def resolve(ref: str) -> dict | None:
@@ -60,17 +64,6 @@ def find_place_names(text: str, max_names: int = 8) -> list[str]:
     return [name for _, _, name in sorted(hits)][:max_names]
 
 
-def nearest_neighbor(locs: list[dict]) -> list[dict]:
-    """從第一個地點出發，每次走到最近的未訪地點。"""
-    order, rest = [locs[0]], locs[1:]
-    while rest:
-        cur = order[-1]
-        nxt = min(rest, key=lambda x: haversine_m(cur["lat"], cur["lng"], x["lat"], x["lng"]))
-        order.append(nxt)
-        rest.remove(nxt)
-    return order
-
-
 def run(locations: list[str]) -> dict:
     found, missing, seen = [], [], set()
     for ref in locations:
@@ -84,35 +77,27 @@ def run(locations: list[str]) -> dict:
         return {"error": "These places are not in the data. Tell the user honestly; do not invent a route.",
                 "not_found": missing}
 
-    order = nearest_neighbor(found)
-    legs, suggested_kg, sea_km = [], 0.0, 0.0
+    order = found   # 依使用者提到的順序（與地圖頁相同，不自動排序）
+    legs, land_km = [], 0.0
     for a, b in zip(order, order[1:]):
-        km = carbon.road_km(haversine_m(a["lat"], a["lng"], b["lat"], b["lng"]))
-        modes = carbon.feasible_modes(km, a["city"], b["city"])
-        mode = carbon.suggest(modes)
+        # 碳排用未四捨五入的距離計算（與地圖頁相同），距離只在輸出時取到 0.1 公里
+        raw_km = carbon.road_km_raw(haversine_m(a["lat"], a["lng"], b["lat"], b["lng"]))
+        modes = carbon.feasible_modes(raw_km, (a["lat"], a["lng"]), (b["lat"], b["lng"]))
         leg = {"from": a["id"], "to": b["id"], "from_name": a["name"], "to_name": b["name"],
-               "km": km, "est": True, "modes": modes, "suggested": mode}
-        if mode:
-            suggested_kg += carbon.kg(mode, km)
+               "km": round(raw_km, 1), "est": True,
+               "modes": [{"mode": m, "kgCO2e": carbon.kg(m, raw_km)} for m in modes]}
+        if modes:
+            land_km += raw_km
         else:
             leg["note"] = "Crosses the sea (outlying island). Needs a flight or ferry; not included in carbon totals."
-            sea_km += km
         legs.append(leg)
 
-    total_km = round(sum(l["km"] for l in legs) - sea_km, 1)   # 碳排只算陸路
-    usable = {m for m in carbon.MODES if all(m in l["modes"] for l in legs if l["modes"])}
-    compare = [m for m in ("bus", "train", "motorcycle", "car") if m in usable]
-    car_kg = carbon.kg("car", total_km)
-    suggested_kg = round(suggested_kg, 3)
     out = {
         "order": [x["id"] for x in order],
         "names": [x["name"] for x in order],
         "legs": legs,
-        "total_km": total_km,
-        "carbon": [{"mode": m, "kgCO2e": carbon.kg(m, total_km)} for m in compare],
-        "suggested_kgCO2e": suggested_kg,
-        "car_kgCO2e": car_kg,
-        "saved_vs_car_kgCO2e": round(car_kg - suggested_kg, 3),
+        "total_km": round(land_km, 1),                 # 碳排只算陸路
+        "car_kgCO2e": carbon.kg("car", land_km),
         "note": NOTE,
     }
     if missing:

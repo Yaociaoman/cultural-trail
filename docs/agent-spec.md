@@ -433,6 +433,11 @@ agent/
 
 ## 7. 碳排與路線規格
 
+> **2026-10-15 更新（地圖頁「行程路線與碳排」Phase 5，見 `docs/carbon-route-prompt.md` §14）：**
+> - 係數與設定改讀 `carbon/carbon-factors.json`、`carbon/carbon-config.json`（與地圖頁共用），已刪除 `agent/config/carbon_factors.json`。
+> - `plan_route` 依使用者提到的順序（不再自動排序），只列出各交通方式每人的大約碳排，**不挑建議方式**；系統摘要最後引導旅客到地圖頁「我的行程 → 加入行程 → 查詢路線」比較時間與看建議。
+> - 本節以下的 `suggested`、最近鄰排序等描述已不適用。
+
 ### 7.1 路線規劃（`plan_route`）
 
 - 距離用 **haversine 直線距離 × 繞路係數 1.3** 估算，回傳時標記 `est: true`（代表估算值）

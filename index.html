@@ -1810,6 +1810,47 @@ const CHAT_KB = [
         },
     },
     {
+        // 路線、碳排：引導到地圖頁「我的行程」（放在城市前面：「台北到台南怎麼去比較環保」要先比對到這一則）
+        keys: ['碳排', '碳足跡', '環保', '低碳', '路線', '怎麼去', '交通方式', 'carbon', 'co2', 'route', 'routes', 'eco-friendly',
+               'ルート', '行き方', '排出', 'klima', 'anreise', 'verkehrsmittel'],
+        reply: {
+            'zh-TW': `想比較交通方式的碳排，可以用地圖頁的<b>「我的行程」</b>：
+            <ol>
+                <li>在地圖上點景點，按<b>「＋ 加入行程」</b>（最多 8 個，可上下調整順序）。</li>
+                <li>在左下角的「我的行程」選<b>起點</b>（在地圖上點選，或使用目前位置）與<b>人數</b>。</li>
+                <li>按<b>「查詢路線」</b>，就能看到每一段各交通方式的時間、碳排、和開車相比少排多少，以及低碳建議。</li>
+            </ol>
+            <span class="chat-note">碳排依環境部官方係數估算，僅供參考。</span>`,
+            en: `To compare the carbon footprint of different ways to travel, use <b>My Trip</b> on the map:
+            <ol>
+                <li>Select places on the map and tap <b>“+ Add to trip”</b> (up to 8; you can reorder them).</li>
+                <li>In My Trip (bottom left), choose a <b>starting point</b> (pick on the map or use your location) and the number of <b>travellers</b>.</li>
+                <li>Tap <b>“Find routes”</b> to see time, carbon and savings versus driving for each leg, plus a low-carbon suggestion.</li>
+            </ol>
+            <span class="chat-note">Carbon figures are estimates based on official Taiwan factors.</span>`,
+            ja: `交通手段ごとの CO₂ を比べるには、地図ページの<b>「マイ旅程」</b>をご利用ください：
+            <ol>
+                <li>地図でスポットを選び、<b>「＋ 旅程に追加」</b>を押します（最大 8 か所、順番も変更できます）。</li>
+                <li>左下の「マイ旅程」で<b>出発地</b>（地図で選ぶ、または現在地）と<b>人数</b>を選びます。</li>
+                <li><b>「ルート検索」</b>を押すと、区間ごとに所要時間・CO₂・自動車との差と、低炭素なおすすめが表示されます。</li>
+            </ol>
+            <span class="chat-note">CO₂ は台湾環境部の公式係数による推計値です。</span>`,
+            de: `Um den CO₂-Ausstoß verschiedener Verkehrsmittel zu vergleichen, nutze <b>„Meine Reise“</b> auf der Karte:
+            <ol>
+                <li>Orte auf der Karte auswählen und <b>„+ Zur Reise hinzufügen“</b> tippen (bis zu 8, Reihenfolge änderbar).</li>
+                <li>Unter „Meine Reise“ (unten links) <b>Startpunkt</b> (auf der Karte oder eigener Standort) und <b>Personenzahl</b> wählen.</li>
+                <li><b>„Routen suchen“</b> tippen: Für jeden Abschnitt siehst du Zeit, CO₂, die Ersparnis gegenüber dem Auto und eine klimafreundliche Empfehlung.</li>
+            </ol>
+            <span class="chat-note">Die CO₂-Werte sind Schätzungen nach offiziellen Faktoren Taiwans.</span>`,
+        },
+        chips: {
+            'zh-TW': ['這個網站怎麼使用？', '台南一日遊怎麼玩？'],
+            en: ['How do I use this site?', 'Tainan day trip'],
+            ja: ['このサイトの使い方は？', '台南の日帰り旅行'],
+            de: ['Wie benutze ich die Seite?', 'Tagesausflug Tainan'],
+        },
+    },
+    {
         keys: ['台南', '臺南', 'tainan'],
         reply: {
             'zh-TW': `<b>台南古都一日遊</b>

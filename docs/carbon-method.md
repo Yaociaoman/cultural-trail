@@ -127,7 +127,7 @@
 | 元件 | 說明 |
 | --- | --- |
 | `carbon/carbon-core.js` | 計算核心（純函式，瀏覽器與 Node.js 共用），28 項自動測試（`node --test`） |
-| `carbon/carbon-factors.json`、`carbon/carbon-config.json` | 係數與假設值，網站與 AI 導覽共用同一份 |
+| `carbon/carbon-factors.json`、`carbon/carbon-config.json` | 係數與假設值，網站與 AI 導覽共用同一份；AI 導覽只列出各方式的大約碳排，建議一律由地圖頁產生，兩邊不會給出不同答案 |
 | `carbon/transit.js` | 載入車站與公車可達資料；檔案不存在時自動退回「只依距離判斷」 |
 | `carbon/route-panel.js` | 地圖頁介面（Leaflet），所有資料文字以 `textContent` 顯示，避免 XSS |
 | `carbon/strings.js` | 繁體中文、English、日本語、Deutsch 四種語言 |

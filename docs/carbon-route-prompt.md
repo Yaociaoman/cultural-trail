@@ -420,4 +420,5 @@ Phase N 已驗收通過，請進行 Phase N+1。
 3. **捷運**：維持不顯示（官方資料無係數）。
 4. **TDX**：GitHub Secrets 中的同一組金鑰，調整權限即可取得運輸資料；本機不實測。Phase 3 直接撰寫腳本，在 GitHub Actions 執行，抓不到時由使用者到 TDX 開權限。缺檔時前端退回 MVP 模式。
 5. **地圖頁**：A 目前沒有在修改，`index.html` 仍是單一檔案。
-6. **Agent（Phase 5）**：待使用者決定是否保留 `plan_route`、`estimate_carbon`。
+6. **Agent（Phase 5，取代原 §10 Phase 5 的「移除工具」）**：兩邊都保留。Agent 改讀 `carbon/` 的同一份係數與設定、依使用者提到的順序、只列各方式的大約碳排、不挑建議，並引導旅客到地圖頁「我的行程」；Agent 離線時的 CHAT_KB 也有同樣的引導。
+7. **高鐵可達距離**：6 km（高鐵站多在市區外）。
