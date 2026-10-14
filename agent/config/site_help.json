@@ -1,0 +1,15 @@
+{
+  "_comment": "網站使用說明，整理自 index.html 的 CHAT_KB。純文字（可含簡單 Markdown），不可放 HTML。ja、de 於 Phase 6 補上。",
+  "zh-TW": {
+    "usage": "Taiwan Cultural Trails 主要有三個功能：\n1. **Explore Map**：在地圖上瀏覽景點、餐廳與文創活動，可用左側欄搜尋與分類篩選。\n2. **Stamp Collection**：實際到現場拍照並上傳，就能解鎖該地點的集章。\n3. **AI Guide**：AI 導覽員，可以回答網站用法、幫你規劃行程。",
+    "stamp": "解鎖集章的步驟：\n1. 到現場拍一張照片（請開啟相機的定位功能）。\n2. 進入 Stamp Collection，按「Choose Photo」上傳。\n3. 系統會讀取照片中的 GPS，若在地點 500 公尺內就自動解鎖。\n照片沒有 GPS 的話，可以手動選擇類別與地點。注意：部分通訊軟體傳送的照片會被移除 GPS 資訊。集章一定要旅客本人到場拍照，AI 導覽員無法代為解鎖。",
+    "badge": "每個類別各蒐集 3 個集章，就能解鎖對應的永續徽章：\n- **Green Traveler**：文創活動（SDG 11）\n- **Sustainable Foodie**：觀光餐廳（SDG 12）\n- **Heritage Explorer**：觀光景點（SDG 8.9）\n徽章會顯示在 Stamp Collection 上方的「永續文化通行證」（登機證造型），也可以匯出成圖片。",
+    "gps": "如果照片沒有 GPS，系統會跳出選單，讓你手動選擇類別與地點後確認解鎖。下次拍照前，可以到手機的相機設定開啟「位置標記」。另外，透過部分通訊軟體傳送的照片會被移除 GPS，請直接上傳原始照片。"
+  },
+  "en": {
+    "usage": "Taiwan Cultural Trails has three main features:\n1. **Explore Map**: browse attractions, restaurants and cultural & creative activities on the map; search and filter by category in the sidebar.\n2. **Stamp Collection**: visit a place, take a photo and upload it to unlock that location's stamp.\n3. **AI Guide**: an AI tour guide that explains how the site works and helps you plan trips.",
+    "stamp": "How to unlock a stamp:\n1. Take a photo on site (turn on location tagging in your camera).\n2. Open Stamp Collection and tap \"Choose Photo\" to upload it.\n3. The site reads the photo's GPS data; if you were within 500 m of the location, the stamp unlocks automatically.\nIf the photo has no GPS data, you can choose the category and location manually. Note: some messaging apps strip GPS data from photos. You must visit in person to collect a stamp; the AI Guide cannot unlock stamps for you.",
+    "badge": "Collect 3 stamps in a category to unlock its sustainability badge:\n- **Green Traveler**: cultural & creative activities (SDG 11)\n- **Sustainable Foodie**: restaurants (SDG 12)\n- **Heritage Explorer**: attractions (SDG 8.9)\nBadges appear on the Sustainable Culture Pass (a boarding-pass style card) above Stamp Collection, which you can export as an image.",
+    "gps": "If your photo has no GPS data, a menu will appear so you can choose the category and location manually. Next time, turn on location tagging in your phone's camera settings. Photos sent through some messaging apps lose their GPS data, so upload the original photo."
+  }
+}
