@@ -30,9 +30,19 @@ jobs:
       - name: Fetch data.gov.tw open data
         run: node scripts/fetch-opendata.mjs
 
+      # 地圖頁「行程路線與碳排」用的車站與公車站牌資料（TDX 公共運輸 API）
+      # 抓不到（例如金鑰沒有運輸資料權限）時保留上次的檔案，不影響觀光資料更新
+      - name: Build transit data (TDX)
+        continue-on-error: true
+        env:
+          TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
+          TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
+        run: node scripts/build-transit-data.mjs
+
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/locations.json
+          for f in data/transit_stations.json data/bus_access.json; do if [ -f "$f" ]; then git add "$f"; fi; done
           git diff --staged --quiet || (git commit -m "chore: update tourism data" && git push)

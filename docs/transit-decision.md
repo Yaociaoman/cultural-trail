@@ -23,3 +23,14 @@
 - 本機不實測。Phase 3 直接撰寫 `scripts/build-transit-data.js`，在 GitHub Actions 中執行；若抓不到（401／403），由使用者到 TDX 開通權限。
 - 前端一律支援 MVP 模式；`data/transit_*.json` 不存在時自動退回。
 - 捷運：即使有站點資料，因官方無碳排係數，**維持不顯示**。
+
+## 實作（Phase 3，2026-10-14）
+
+- API 路徑依 TDX 官方 swagger（`/webapi/serviceCategory/ForSwagger` 列出的「公共運輸-軌道」v2／v3、「公共運輸-公車」v2）：
+  - 臺鐵 `/v3/Rail/TRA/Station`、高鐵 `/v2/Rail/THSR/Station`
+  - 捷運 `/v2/Rail/Metro/Station/{RailSystem}`（TRTC、KRTC、TYMC、KLRT、NTDLRT、TMRT、NTMC、NTALRT；不含貓空纜車 TRTCMG）
+  - 公車 `/v2/Bus/Stop/City/{City}`（22 縣市）、`/v2/Bus/Stop/InterCity`
+- 不帶金鑰時閘道對任何路徑都回 401，無法在本機分辨路徑對錯；第一次在 GitHub Actions 執行後請看 log。
+- 腳本：`scripts/build-transit-data.mjs`；測試：`node --test scripts/build-transit-data.test.mjs`。
+- 前端：`carbon/transit.js`；兩種模式都套用 `carbon-config.json` 的距離範圍，TDX 模式另外要求兩端都在車站可達距離內，且最近的不是同一站。
+- 捷運雖有站點資料，因官方無碳排係數仍不顯示。

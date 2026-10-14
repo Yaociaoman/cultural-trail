@@ -216,9 +216,17 @@ test('資料中每個景點的座標都落在它所屬縣市的陸地上（離�
     }
 });
 
-test('TDX 模式（Phase 3 介面）：兩端都在可達範圍才出現，並加上步行時間', () => {
-    const transit = { nearestKm: (p, mode) => (mode === 'train' ? 0.8 : mode === 'hsr' ? 10 : 0.2) };
-    const leg = core.computeLeg(ORIGIN, pointAtRoadKm(30), 1, config, factors, { transit });
+test('TDX 模式：兩端都在可達範圍才出現，並加上步行時間', () => {
+    const to = pointAtRoadKm(30);
+    const transit = {
+        nearest: (p, mode) => {
+            const id = `${mode}-${p === to ? 'B' : 'A'}`;
+            if (mode === 'train') return { km: 0.8, id };
+            if (mode === 'hsr') return { km: 10, id };
+            return { km: 0.2, id };
+        },
+    };
+    const leg = core.computeLeg(ORIGIN, to, 1, config, factors, { transit });
     const modes = leg.options.map(o => o.mode);
     assert.ok(modes.includes('train'));
     assert.ok(!modes.includes('hsr'), '高鐵站太遠仍出現');
@@ -227,6 +235,21 @@ test('TDX 模式（Phase 3 介面）：兩端都在可達範圍才出現，並�
     assert.ok(!train.tags.includes('verifyStation'));
     const expect = 30 / config.speedKmh.train * 60 + config.waitMin.train + 1.6 / config.speedKmh.walk * 60;
     assert.ok(near(train.timeMin, expect, 1e-6));
+});
+
+test('TDX 模式：兩端最近的是同一個車站時不出現', () => {
+    const transit = { nearest: () => ({ km: 0.3, id: 'same' }) };
+    const leg = core.computeLeg(ORIGIN, pointAtRoadKm(20), 1, config, factors, { transit });
+    for (const mode of ['bus', 'train', 'hsr']) assert.ok(!leg.options.some(o => o.mode === mode), mode);
+});
+
+test('TDX 模式：某一端沒有資料（例如旅客自選的起點沒有公車資料）時退回 MVP 判斷', () => {
+    const transit = { nearest: (p, mode) => (mode === 'bus' && p === ORIGIN ? null : { km: 0.2, id: Math.random() }) };
+    const leg = core.computeLeg(ORIGIN, pointAtRoadKm(20), 1, config, factors, { transit });
+    const bus = leg.options.find(o => o.mode === 'bus');
+    assert.ok(bus && bus.tags.includes('verifyStation'));
+    const train = leg.options.find(o => o.mode === 'train');
+    assert.ok(train && !train.tags.includes('verifyStation'));
 });
 
 test('整趟加總：依選擇計算，沒選的段用建議；與全程開車比較', () => {

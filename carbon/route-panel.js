@@ -93,6 +93,10 @@
             ]);
             state.config = c;
             state.factors = f;
+            // 車站資料（TDX 模式）：載入失敗或檔案不存在時維持 MVP 模式
+            if (window.CarbonTransit) {
+                try { await window.CarbonTransit.load(); } catch (e) { console.warn('transit data:', e.message); }
+            }
         } catch (e) {
             console.warn('carbon data load failed:', e.message);
             state.loadError = true;
@@ -163,7 +167,7 @@
         }
         const pts = currentPoints();
         const pointKey = p => p.id || `${p.lat},${p.lng}`;
-        state.trip = core.planTrip(state.origin, state.stops, state.people, state.config, state.factors);
+        state.trip = core.planTrip(state.origin, state.stops, state.people, state.config, state.factors, transitCtx());
         state.trip.keys = state.trip.legs.map(leg => `${pointKey(pts[leg.fromIndex])}>${pointKey(pts[leg.toIndex])}`);
         const sel = {};
         state.trip.legs.forEach((leg, i) => {
@@ -171,6 +175,12 @@
             if (want && leg.options.some(o => o.mode === want)) sel[i] = want;
         });
         state.selection = sel;
+    }
+
+    /** 有車站資料時用 TDX 模式，否則 MVP 模式 */
+    function transitCtx() {
+        const t = window.CarbonTransit;
+        return t && t.state.ready ? { transit: t } : null;
     }
 
     function currentPoints() {
@@ -530,6 +540,12 @@
                 h('ul', {},
                     ['official', 'estimatedFactor', 'verifyStation'].map(t =>
                         h('li', {}, h('span', { class: 'trip-tag tag-' + t }, tr('tag.' + t)), ' ', tr('method.label.' + t)))),
+                h('h4', {}, tr('method.dataMode')),
+                h('p', {}, transitCtx()
+                    ? tr('method.dataMode.tdx', { date: (window.CarbonTransit.state.stationsAt || window.CarbonTransit.state.busAt || '').slice(0, 10) })
+                    : tr('method.dataMode.mvp')),
+                h('p', {}, tr('method.reach', {
+                    bus: fmtKm(config.stationReachKm.bus), train: fmtKm(config.stationReachKm.train), hsr: fmtKm(config.stationReachKm.hsr) })),
                 h('p', { class: 'trip-note' }, tr('method.retrieved', { date: factors.retrievedAt })),
             ));
         document.body.appendChild(dialog);

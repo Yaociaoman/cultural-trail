@@ -107,7 +107,8 @@
 
     /**
      * 這段可以用哪些交通方式，以及每種方式的判斷依據。
-     * ctx.transit（Phase 3）若提供，需有 nearestKm(point, mode) → 公里或 null；沒有就是 MVP 模式。
+     * ctx.transit（TDX 模式）若提供，需有 nearest(point, mode) → { km, id? } 或 null（沒有資料）；
+     * 沒有 ctx.transit 就是 MVP 模式。
      */
     function feasibleModes(km, from, to, config, factors, ctx) {
         const transit = ctx && ctx.transit;
@@ -121,17 +122,22 @@
                 if (inRange(km, config.rangeKm[mode])) out.push({ mode, verifyStation: false, accessWalkKm: 0 });
                 continue;
             }
+            // 兩種模式都套用距離範圍（例如 1 公里不建議搭臺鐵）；TDX 模式再加上站點判斷
+            if (!inRange(km, config.rangeKm[mode])) continue;
             const reach = config.stationReachKm[mode];
-            const a = transit ? transit.nearestKm(from, mode) : null;
-            const b = transit ? transit.nearestKm(to, mode) : null;
-            if (transit && isFiniteNum(a) && isFiniteNum(b)) {
-                // TDX 模式：兩端都有站點資料，依可達距離判斷
-                if (a <= reach && b <= reach) out.push({ mode, verifyStation: false, accessWalkKm: a + b });
+            const a = transit ? transit.nearest(from, mode) : null;
+            const b = transit ? transit.nearest(to, mode) : null;
+            if (a && b && isFiniteNum(a.km) && isFiniteNum(b.km)) {
+                // TDX 模式：兩端都有站點資料，依可達距離判斷；兩端最近的是同一站就不用搭
+                const sameStation = a.id !== undefined && a.id === b.id;
+                if (a.km <= reach && b.km <= reach && !sameStation) {
+                    out.push({ mode, verifyStation: false, accessWalkKm: a.km + b.km });
+                }
                 continue;
             }
             // MVP 模式（或缺少某一端的站點資料）：依距離範圍，標「需確認站點」
             if ((config.mvpHiddenModes || []).includes(mode)) continue;
-            if (inRange(km, config.rangeKm[mode])) out.push({ mode, verifyStation: true, accessWalkKm: 0 });
+            out.push({ mode, verifyStation: true, accessWalkKm: 0 });
         }
         return out;
     }
