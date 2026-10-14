@@ -18,15 +18,31 @@ jobs:
         with:
           node-version: 22
 
-      - name: Fetch TDX data
+      # 【已停用】原本透過 TDX API 抓資料（需要 TDX 金鑰），2026-10-14 改用 data.gov.tw 官方開放資料集
+      # 要恢復時：取消下面 5 行的註解，並註解掉「Fetch data.gov.tw open data」這一步
+      # - name: Fetch TDX data
+      #   env:
+      #     TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
+      #     TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
+      #   run: node scripts/fetch-tdx.mjs
+
+      # 從政府資料開放平臺下載交通部觀光署的觀光資訊資料庫（免金鑰），各縣市平均挑選
+      - name: Fetch data.gov.tw open data
+        run: node scripts/fetch-opendata.mjs
+
+      # 地圖頁「行程路線與碳排」用的車站與公車站牌資料（TDX 公共運輸 API）
+      # 抓不到（例如金鑰沒有運輸資料權限）時保留上次的檔案，不影響觀光資料更新
+      - name: Build transit data (TDX)
+        continue-on-error: true
         env:
           TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
           TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
-        run: node scripts/fetch-tdx.mjs
+        run: node scripts/build-transit-data.mjs
 
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/locations.json
+          for f in data/transit_stations.json data/bus_access.json; do if [ -f "$f" ]; then git add "$f"; fi; done
           git diff --staged --quiet || (git commit -m "chore: update tourism data" && git push)

@@ -1,0 +1,36 @@
+{
+  // 本機網頁伺服器：網站必須用 http:// 開啟（file:// 會讓地圖被擋、資料讀不到、AI 連不上）
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "網站伺服器 (5500)",
+      "type": "shell",
+      "command": "python3 -u -m http.server 5500 --bind 127.0.0.1",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "static-server",
+        "pattern": { "regexp": "^__never_matches__$" },
+        "background": {
+          "activesBegins": true,
+          "beginsPattern": "Serving HTTP",
+          "endsPattern": "Serving HTTP"
+        }
+      }
+    },
+    {
+      "label": "Agent 服務 (8787)",
+      "type": "shell",
+      "command": "cd agent && source .venv/bin/activate && uvicorn app.main:app --host 127.0.0.1 --port 8787 --reload",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "agent",
+        "pattern": { "regexp": "^__never_matches__$" },
+        "background": {
+          "activesBegins": true,
+          "beginsPattern": "Will watch for changes|Uvicorn running",
+          "endsPattern": "Application startup complete"
+        }
+      }
+    }
+  ]
+}
