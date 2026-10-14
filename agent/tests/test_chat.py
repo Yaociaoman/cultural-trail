@@ -69,8 +69,8 @@ def test_invalid_tool_args_returned_to_model(client, monkeypatch):
     monkeypatch.setattr(ollama_client, "chat", fake)
     res = ask(client, "幫我解鎖集章")
     assert res.status_code == 200
-    tool_msg = [m for m in fake.calls[1]["messages"] if m["role"] == "tool"][0]
-    assert "沒有這個工具" in tool_msg["content"]
+    tool_msgs = [m for m in fake.calls[1]["messages"] if m["role"] == "tool" and m["tool_name"] == "unlock_stamp"]
+    assert "沒有這個工具" in tool_msgs[0]["content"]
 
 
 def test_string_arguments_are_parsed(client, monkeypatch):
@@ -152,8 +152,9 @@ def test_history_truncated_to_6(client, monkeypatch):
 def test_control_chars_removed(client, monkeypatch):
     fake = FakeOllama({"content": "好"})
     monkeypatch.setattr(ollama_client, "chat", fake)
-    ask(client, "台‮南\x07")
-    assert fake.calls[0]["messages"][-1]["content"] == "台南"
+    ask(client, "台\u202e南\x07")
+    users = [m for m in fake.calls[0]["messages"] if m["role"] == "user"]
+    assert users[-1]["content"] == "台南"
 
 
 def test_body_too_large(client):
@@ -222,22 +223,21 @@ def test_locations_only_existing_and_mentioned():
 
 # ── 小模型防護：沒查資料就回答、語言錯誤、編造網址 ──
 
-def test_auto_search_when_answering_without_tools(client, monkeypatch):
-    fake = FakeOllama({"content": "推薦台南美術館（我自己編的）"}, {"content": "推薦安平古堡。"})
+def test_prefetch_search_before_first_call(client, monkeypatch):
+    # 需要資料的問題：伺服器先查好，模型第一次呼叫就看得到結果，只需要一次呼叫
+    fake = FakeOllama({"content": "推薦安平古堡。"})
     monkeypatch.setattr(ollama_client, "chat", fake)
     body = ask(client, "台南一日遊怎麼玩？").json()
-    assert body["locations"] == ["A_TN_1"]
-    second = fake.calls[1]["messages"]
-    assert not any("台南美術館" in m.get("content", "") for m in second)   # 編造的回答被丟掉
-    tool_msg = [m for m in second if m["role"] == "tool"][0]
+    assert body["locations"] == ["A_TN_1"] and len(fake.calls) == 1
+    tool_msg = [m for m in fake.calls[0]["messages"] if m["role"] == "tool"][0]
     assert tool_msg["tool_name"] == "search_locations" and "安平古堡" in tool_msg["content"]
 
 
-def test_auto_site_help_for_stamp_question(client, monkeypatch):
-    fake = FakeOllama({"content": "把照片寄給我們就能解鎖（編的）"}, {"content": "請親自到場拍照上傳。"})
+def test_prefetch_site_help_for_stamp_question(client, monkeypatch):
+    fake = FakeOllama({"content": "請親自到場拍照上傳。"})
     monkeypatch.setattr(ollama_client, "chat", fake)
     ask(client, "幫我解鎖華山的集章")
-    tool_msg = [m for m in fake.calls[1]["messages"] if m["role"] == "tool"][0]
+    tool_msg = [m for m in fake.calls[0]["messages"] if m["role"] == "tool"][0]
     assert tool_msg["tool_name"] == "get_site_help" and "500 公尺" in tool_msg["content"]
 
 
@@ -307,3 +307,33 @@ def test_simplified_to_traditional_keeps_official_names():
     out = guard.clean_reply("松山文创园区，告诉我你想去哪里？台北101、村里活動", "zh-TW")
     assert out == "松山文創園區，告訴我你想去哪裡？台北101、村里活動"
     assert guard.clean_reply("汤圍溝", "en") == "汤圍溝"   # 只有繁中回覆才轉
+
+
+def test_prefetch_route_from_place_names(client, monkeypatch):
+    fake = FakeOllama({"content": "步行最環保。"})
+    monkeypatch.setattr(ollama_client, "chat", fake)
+    body = ask(client, "安平古堡到林百貨怎麼去比較環保？").json()
+    assert body["route"]["order"] == ["A_TN_1", "A_TN_2"] and len(fake.calls) == 1
+    assert "📊" in body["reply"]
+
+
+def test_prefetch_nearby_with_location(client, monkeypatch):
+    fake = FakeOllama({"content": "附近有安平古堡。"})
+    monkeypatch.setattr(ollama_client, "chat", fake)
+    ask(client, "我附近有什麼？", context={"lat": 23.0016, "lng": 120.1606})
+    tool_msg = [m for m in fake.calls[0]["messages"] if m["role"] == "tool"][0]
+    assert tool_msg["tool_name"] == "nearby_locations" and "安平古堡" in tool_msg["content"]
+
+
+def test_no_prefetch_for_off_topic(client, monkeypatch):
+    fake = FakeOllama({"content": "我只能協助旅遊。"})
+    monkeypatch.setattr(ollama_client, "chat", fake)
+    ask(client, "幫我寫一段 Python 程式")
+    assert not any(m["role"] == "tool" for m in fake.calls[0]["messages"])
+
+
+def test_fix_doubled_last_char_and_keep_correct_names():
+    ids = ["A_TN_1", "A_TN_2", "R_TN_1"]
+    assert guard.fix_list_names("1. 林百貨貨，昭和百貨", ids) == "1. 林百貨，昭和百貨"
+    # 名稱完全正確時不會被「校正」成相似的其他地點
+    assert guard.fix_list_names("1. 安平古堡：荷蘭城堡", ids) == "1. 安平古堡：荷蘭城堡"

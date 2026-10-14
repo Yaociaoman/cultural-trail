@@ -145,3 +145,10 @@ def test_no_route_untouched():
 def test_summary_languages():
     for lang, word in [("en", "cycling"), ("ja", "自転車"), ("de", "Fahrrad")]:
         assert word in guard.route_summary(ROUTE, lang)
+
+
+def test_find_place_names_in_sentence():
+    from app.tools.plan_route import find_place_names
+    assert find_place_names("幫我安排安平古堡到林百貨的路線") == ["安平古堡", "林百貨"]
+    assert find_place_names("林百貨，然後安平古堡") == ["林百貨", "安平古堡"]   # 依出現順序
+    assert find_place_names("今天天氣很好") == []

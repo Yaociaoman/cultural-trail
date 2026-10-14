@@ -479,6 +479,15 @@
         .chat-input-row button { padding:0 1.3rem; border:none; border-radius:20px; background:var(--brick-red); color:white; font-family:inherit; font-size:0.78rem; cursor:pointer; transition:background 0.2s; }
         .chat-input-row button:hover { background:var(--brick-light); }
         .chat-input-row button:disabled { opacity:0.5; cursor:default; }
+        /* AI Guide：連線狀態、Agent 回覆、地點按鈕、路線摘要 */
+        .chat-demo-tag.online  { color:#7fd1b9; border-color:#7fd1b9; border-style:solid; }
+        .chat-demo-tag.offline { color:rgba(245,240,232,0.6); border-color:rgba(245,240,232,0.4); }
+        .chat-line + .chat-line { margin-top:0.25rem; }
+        .chat-route { margin-top:0.5rem; padding:0.5rem 0.7rem; border:1px dashed var(--stamp-gold); border-radius:6px; font-size:0.74rem; background:rgba(201,148,58,0.08); }
+        .chat-locs { display:flex; flex-wrap:wrap; align-items:center; gap:0.35rem; margin-top:0.5rem; }
+        .chat-locs-label { font-size:0.68rem; opacity:0.65; }
+        .chat-loc-btn { font-family:inherit; font-size:0.7rem; padding:0.2rem 0.6rem; border:1px solid var(--whale-blue); border-radius:14px; background:transparent; color:var(--text); cursor:pointer; transition:all 0.2s; }
+        .chat-loc-btn:hover { background:var(--whale-blue); color:var(--paper-white); }
 
         /* Responsive passport card */
         @media (max-width: 540px) {
@@ -670,7 +679,7 @@
                 <h2>Trail Guide · 在地嚮導</h2>
                 <small>詢問網站用法，或讓我幫你安排道地行程</small>
             </div>
-            <span class="chat-demo-tag">Demo</span>
+            <span class="chat-demo-tag" id="chatStatus" aria-live="polite">連線檢查中</span>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-chips" id="chatChips"></div>
@@ -1616,25 +1625,93 @@ document.addEventListener('keydown', e => {
 });
 
 /* ══════════════════════════════════════════════════
-   AI GUIDE (前端示範版：預設對話 + 關鍵字比對)
+   AI GUIDE
+   - Agent 可用時：呼叫 agent/ 服務（Ollama），回覆以安全方式顯示（不用 innerHTML）
+   - Agent 不可用時：退回離線版（CHAT_KB 關鍵字比對，四種語言）
 ══════════════════════════════════════════════════ */
-const DEFAULT_CHIPS = ['這個網站怎麼使用？', '如何解鎖集章？', '台南一日遊怎麼玩？', '台北文青行程', '推薦夜市美食'];
 
+// Agent 服務位址：demo 用 https 通道時只要改這一行
+const AGENT_BASE_URL = 'http://localhost:8787';
+const AGENT_HEALTH_TIMEOUT_MS = 3000;
+const AGENT_CHAT_TIMEOUT_MS   = 47000;   // 伺服器端總逾時 45 秒，多留一點緩衝
+const AGENT_RECHECK_MS        = 60000;   // 離線時，每 60 秒最多重新檢查一次
+const CHAT_HISTORY_MAX        = 6;
+const CHAT_LANGS = ['zh-TW', 'en', 'ja', 'de'];
+
+const DEFAULT_CHIPS_I18N = {
+    'zh-TW': ['這個網站怎麼使用？', '如何解鎖集章？', '台南一日遊怎麼玩？', '台北文青行程', '推薦夜市美食'],
+    en: ['How do I use this site?', 'How do I unlock stamps?', 'Tainan day trip', 'Night market food'],
+    ja: ['このサイトの使い方は？', 'スタンプの集め方は？', '台南の日帰り旅行', '夜市グルメ'],
+    de: ['Wie benutze ich die Seite?', 'Wie sammle ich Stempel?', 'Tagesausflug Tainan', 'Nachtmarkt-Essen'],
+};
+const DEFAULT_CHIPS = DEFAULT_CHIPS_I18N['zh-TW'];
+
+// 離線版問答（內容是我們自己寫的固定文字，可以用 innerHTML 顯示；Agent 的回覆不行）
+// keys：英文關鍵字比對整個單字，中日文比對部分字串
 const CHAT_KB = [
     {
-        keys: ['怎麼使用', '如何使用', '怎麼用', '使用方式', '教學', 'how to use'],
-        reply: `歡迎來到 Taiwan Cultural Trails！主要有三個功能：
+        keys: ['怎麼使用', '如何使用', '怎麼用', '使用方式', '教學', 'how to use', 'how do i use', '使い方', 'benutze', 'wie funktioniert'],
+        reply: {
+            'zh-TW': `歡迎來到 Taiwan Cultural Trails！主要有三個功能：
             <ol>
                 <li><b>Explore Map</b>：在地圖上瀏覽景點、餐廳與文化活動，可用左側欄搜尋與分類篩選。</li>
                 <li><b>Stamp Collection</b>：實際造訪後上傳照片，就能解鎖該地點的集章。</li>
                 <li><b>AI Guide</b>：也就是我，可以幫你規劃行程。</li>
             </ol>
             想知道集章怎麼解鎖嗎？`,
-        chips: ['如何解鎖集章？', '徽章怎麼獲得？']
+            en: `Welcome to Taiwan Cultural Trails! There are three main features:
+            <ol>
+                <li><b>Explore Map</b>: browse attractions, restaurants and cultural activities; search and filter in the sidebar.</li>
+                <li><b>Stamp Collection</b>: visit a place and upload a photo to unlock its stamp.</li>
+                <li><b>AI Guide</b>: that's me — I can help you plan your trip.</li>
+            </ol>
+            Want to know how to unlock stamps?`,
+            ja: `Taiwan Cultural Trails へようこそ！主な機能は 3 つです：
+            <ol>
+                <li><b>Explore Map</b>：地図で観光地・レストラン・文化イベントを探せます。左のサイドバーで検索・絞り込みできます。</li>
+                <li><b>Stamp Collection</b>：現地で撮った写真をアップロードすると、その場所のスタンプがもらえます。</li>
+                <li><b>AI Guide</b>：わたしです。旅のプランづくりをお手伝いします。</li>
+            </ol>
+            スタンプの集め方も知りたいですか？`,
+            de: `Willkommen bei Taiwan Cultural Trails! Es gibt drei Hauptfunktionen:
+            <ol>
+                <li><b>Explore Map</b>: Sehenswürdigkeiten, Restaurants und Kulturveranstaltungen auf der Karte entdecken; Suche und Filter in der Seitenleiste.</li>
+                <li><b>Stamp Collection</b>: Vor Ort ein Foto hochladen, um den Stempel des Ortes freizuschalten.</li>
+                <li><b>AI Guide</b>: Das bin ich – ich helfe dir bei der Reiseplanung.</li>
+            </ol>
+            Möchtest du wissen, wie man Stempel sammelt?`,
+        },
+        chips: {
+            'zh-TW': ['如何解鎖集章？', '徽章怎麼獲得？'],
+            en: ['How do I unlock stamps?', 'How do I get badges?'],
+            ja: ['スタンプの集め方は？', 'バッジのもらい方は？'],
+            de: ['Wie sammle ich Stempel?', 'Wie bekomme ich Abzeichen?'],
+        },
     },
     {
-        keys: ['集章', '解鎖', '蓋章', '上傳', '照片', 'stamp'],
-        reply: `解鎖集章的步驟：
+        // 放在「集章」前面：「照片沒有 GPS 怎麼辦？」也含「照片」，要先比對到這一則
+        keys: ['gps', '定位', '沒有位置', '沒有gps', '位置情報', 'standort'],
+        reply: {
+            'zh-TW': `如果照片沒有 GPS，系統會跳出選單，讓你<b>手動選擇類別與地點</b>後確認解鎖。
+            <span class="chat-note">下次拍照前，可以到手機的相機設定開啟「位置標記」。</span>`,
+            en: `If your photo has no GPS data, a menu will let you <b>choose the category and place manually</b> to unlock the stamp.
+            <span class="chat-note">Next time, turn on location tagging in your camera settings.</span>`,
+            ja: `写真に GPS 情報がない場合は、メニューから<b>カテゴリと場所を手動で選んで</b>スタンプを獲得できます。
+            <span class="chat-note">次回はカメラの設定で「位置情報」をオンにしてください。</span>`,
+            de: `Hat dein Foto keine GPS-Daten, kannst du <b>Kategorie und Ort manuell auswählen</b>, um den Stempel freizuschalten.
+            <span class="chat-note">Aktiviere nächstes Mal die Standortspeicherung in den Kameraeinstellungen.</span>`,
+        },
+        chips: {
+            'zh-TW': ['如何解鎖集章？'],
+            en: ['How do I unlock stamps?'],
+            ja: ['スタンプの集め方は？'],
+            de: ['Wie sammle ich Stempel?'],
+        },
+    },
+    {
+        keys: ['集章', '解鎖', '蓋章', '上傳', '照片', 'stamp', 'stamps', 'スタンプ', 'stempel'],
+        reply: {
+            'zh-TW': `解鎖集章的步驟：
             <ol>
                 <li>到現場拍一張照片（<b>請開啟相機的定位功能</b>）。</li>
                 <li>進入 Stamp Collection，按「Choose Photo」上傳。</li>
@@ -1642,28 +1719,81 @@ const CHAT_KB = [
             </ol>
             照片沒有 GPS 的話，也可以手動選擇拍攝地點。
             <span class="chat-note">小提醒：部分通訊軟體傳送的照片會被移除 GPS 資訊。</span>`,
-        chips: ['徽章怎麼獲得？', '照片沒有 GPS 怎麼辦？']
+            en: `How to unlock a stamp:
+            <ol>
+                <li>Take a photo on site (<b>turn on location tagging in your camera</b>).</li>
+                <li>Open Stamp Collection and tap "Choose Photo" to upload it.</li>
+                <li>The site reads the photo's GPS; if it was taken <b>within 500 m</b>, the stamp unlocks automatically.</li>
+            </ol>
+            If the photo has no GPS data, you can choose the place manually.
+            <span class="chat-note">Tip: some messaging apps remove GPS data from photos.</span>`,
+            ja: `スタンプの集め方：
+            <ol>
+                <li>現地で写真を撮ります（<b>カメラの位置情報をオンに</b>）。</li>
+                <li>Stamp Collection を開き、「Choose Photo」でアップロードします。</li>
+                <li>写真の GPS を読み取り、<b>500 m 以内</b>ならスタンプが自動でもらえます。</li>
+            </ol>
+            GPS 情報がない写真は、撮影場所を手動で選ぶこともできます。
+            <span class="chat-note">ヒント：一部のメッセージアプリで送った写真は GPS 情報が消えます。</span>`,
+            de: `So schaltest du einen Stempel frei:
+            <ol>
+                <li>Mach vor Ort ein Foto (<b>Standort in der Kamera aktivieren</b>).</li>
+                <li>Öffne Stamp Collection und lade es mit „Choose Photo" hoch.</li>
+                <li>Die Seite liest die GPS-Daten; liegt der Ort <b>innerhalb von 500 m</b>, wird der Stempel automatisch freigeschaltet.</li>
+            </ol>
+            Ohne GPS-Daten kannst du den Ort auch manuell auswählen.
+            <span class="chat-note">Tipp: Manche Messenger entfernen die GPS-Daten aus Fotos.</span>`,
+        },
+        chips: {
+            'zh-TW': ['徽章怎麼獲得？', '照片沒有 GPS 怎麼辦？'],
+            en: ['How do I get badges?', 'My photo has no GPS'],
+            ja: ['バッジのもらい方は？', '写真に位置情報がない'],
+            de: ['Wie bekomme ich Abzeichen?', 'Foto ohne Standort'],
+        },
     },
     {
-        keys: ['徽章', 'badge', 'sdg', '成就'],
-        reply: `每個類別各蒐集 <b>3 個集章</b>，就能解鎖對應的永續徽章：
+        keys: ['徽章', 'badge', 'badges', 'sdg', '成就', 'バッジ', 'abzeichen'],
+        reply: {
+            'zh-TW': `每個類別各蒐集 <b>3 個集章</b>，就能解鎖對應的永續徽章：
             <ul>
                 <li><b>Green Traveler</b>：文創活動（SDG 11）</li>
                 <li><b>Sustainable Foodie</b>：觀光餐廳（SDG 12）</li>
                 <li><b>Heritage Explorer</b>：觀光景點（SDG 8.9）</li>
             </ul>
             徽章會顯示在 Stamp Collection 上方的 Boarding Pass，也可以匯出成圖片。`,
-        chips: ['如何解鎖集章？', '台南一日遊怎麼玩？']
+            en: `Collect <b>3 stamps</b> in a category to unlock its sustainability badge:
+            <ul>
+                <li><b>Green Traveler</b>: cultural & creative activities (SDG 11)</li>
+                <li><b>Sustainable Foodie</b>: restaurants (SDG 12)</li>
+                <li><b>Heritage Explorer</b>: attractions (SDG 8.9)</li>
+            </ul>
+            Badges appear on the Boarding Pass above Stamp Collection, which you can export as an image.`,
+            ja: `各カテゴリで<b>スタンプを 3 つ</b>集めると、サステナブルバッジがもらえます：
+            <ul>
+                <li><b>Green Traveler</b>：文化・クリエイティブイベント（SDG 11）</li>
+                <li><b>Sustainable Foodie</b>：レストラン（SDG 12）</li>
+                <li><b>Heritage Explorer</b>：観光地（SDG 8.9）</li>
+            </ul>
+            バッジは Stamp Collection 上部の Boarding Pass に表示され、画像として保存できます。`,
+            de: `Sammle <b>3 Stempel</b> in einer Kategorie, um das passende Nachhaltigkeitsabzeichen zu erhalten:
+            <ul>
+                <li><b>Green Traveler</b>: Kultur- und Kreativveranstaltungen (SDG 11)</li>
+                <li><b>Sustainable Foodie</b>: Restaurants (SDG 12)</li>
+                <li><b>Heritage Explorer</b>: Sehenswürdigkeiten (SDG 8.9)</li>
+            </ul>
+            Die Abzeichen erscheinen auf dem Boarding Pass über Stamp Collection und lassen sich als Bild exportieren.`,
+        },
+        chips: {
+            'zh-TW': ['如何解鎖集章？', '台南一日遊怎麼玩？'],
+            en: ['How do I unlock stamps?', 'Tainan day trip'],
+            ja: ['スタンプの集め方は？', '台南の日帰り旅行'],
+            de: ['Wie sammle ich Stempel?', 'Tagesausflug Tainan'],
+        },
     },
     {
-        keys: ['gps', '定位', '沒有位置', '沒有gps'],
-        reply: `如果照片沒有 GPS，系統會跳出選單，讓你<b>手動選擇類別與地點</b>後確認解鎖。
-            <span class="chat-note">下次拍照前，可以到手機的相機設定開啟「位置標記」。</span>`,
-        chips: ['如何解鎖集章？']
-    },
-    {
-        keys: ['台南', 'tainan'],
-        reply: `<b>台南古都一日遊</b>
+        keys: ['台南', '臺南', 'tainan'],
+        reply: {
+            'zh-TW': `<b>台南古都一日遊</b>
             <ol>
                 <li><b>09:00 林百貨</b>：昭和時代百貨，頂樓還有日治時期防空砲台。</li>
                 <li><b>11:00 神農街 / 老城區散步</b>：感受老屋與巷弄文化。</li>
@@ -1672,11 +1802,45 @@ const CHAT_KB = [
                 <li><b>18:00 晚餐</b>：安平小吃，如蝦捲、豆花。</li>
             </ol>
             這些景點在地圖上都有標記，造訪後別忘了上傳照片集章！`,
-        chips: ['台北文青行程', '推薦夜市美食']
+            en: `<b>A day in old Tainan</b>
+            <ol>
+                <li><b>09:00 林百貨 (Hayashi Department Store)</b>: a Showa-era department store with a WWII anti-aircraft post on the roof.</li>
+                <li><b>11:00 神農街 (Shennong Street)</b>: stroll through old houses and lanes.</li>
+                <li><b>12:30 Lunch</b>: milkfish congee or danzai noodles.</li>
+                <li><b>14:30 安平古堡 (Anping Old Fort) & Anping Old Street</b>: built by the Dutch in 1624, with candied fruit and sword-lion crafts nearby.</li>
+                <li><b>18:00 Dinner</b>: Anping snacks such as shrimp rolls and tofu pudding.</li>
+            </ol>
+            Don't forget to upload a photo after your visit to collect stamps!`,
+            ja: `<b>台南・古都の日帰り旅</b>
+            <ol>
+                <li><b>09:00 林百貨</b>：昭和時代の百貨店。屋上には日本統治時代の防空砲台が残ります。</li>
+                <li><b>11:00 神農街・旧市街さんぽ</b>：古い家並みと路地の文化を感じましょう。</li>
+                <li><b>12:30 昼ごはん</b>：サバヒー粥や担仔麺で地元の味を。</li>
+                <li><b>14:30 安平古堡と安平老街</b>：1624 年にオランダ人が築いた城。近くには砂糖漬けや剣獅の工芸も。</li>
+                <li><b>18:00 夕ごはん</b>：エビ巻きや豆花など安平の小吃。</li>
+            </ol>
+            訪れたら写真をアップロードしてスタンプを集めてくださいね！`,
+            de: `<b>Ein Tag im alten Tainan</b>
+            <ol>
+                <li><b>09:00 林百貨 (Kaufhaus Hayashi)</b>: Kaufhaus aus der Showa-Zeit mit Flugabwehrstellung auf dem Dach.</li>
+                <li><b>11:00 神農街 (Shennong-Straße)</b>: Spaziergang durch alte Häuser und Gassen.</li>
+                <li><b>12:30 Mittagessen</b>: Milchfisch-Reisbrei oder Danzai-Nudeln.</li>
+                <li><b>14:30 安平古堡 (Fort Anping) & Anping-Altstadt</b>: 1624 von den Niederländern erbaut, mit kandierten Früchten und Schwertlöwen-Handwerk.</li>
+                <li><b>18:00 Abendessen</b>: Anping-Snacks wie Garnelenrollen und Tofupudding.</li>
+            </ol>
+            Lade nach dem Besuch ein Foto hoch, um Stempel zu sammeln!`,
+        },
+        chips: {
+            'zh-TW': ['台北文青行程', '推薦夜市美食'],
+            en: ['Taipei creative parks', 'Night market food'],
+            ja: ['台北のおしゃれスポット', '夜市グルメ'],
+            de: ['Kreativparks in Taipeh', 'Nachtmarkt-Essen'],
+        },
     },
     {
-        keys: ['台北', '文青', '文創', 'taipei'],
-        reply: `<b>台北文創半日遊</b>
+        keys: ['台北', '臺北', '文青', '文創', 'taipei', 'taipeh', 'おしゃれ'],
+        reply: {
+            'zh-TW': `<b>台北文創半日遊</b>
             <ol>
                 <li><b>10:00 華山 1914 文創園區</b>：舊酒廠改建的展演空間。</li>
                 <li><b>12:00 永康街或東區午餐</b>：選一間在地小店。</li>
@@ -1684,73 +1848,427 @@ const CHAT_KB = [
                 <li><b>17:30 傍晚到士林夜市</b>：蚵仔煎、大餅包小餅。</li>
             </ol>
             兩個文創園區都屬於「文創活動」類別，剛好可以一起累積 Green Traveler 徽章。`,
-        chips: ['推薦夜市美食', '台南一日遊怎麼玩？']
+            en: `<b>Half a day of creative Taipei</b>
+            <ol>
+                <li><b>10:00 華山1914 (Huashan 1914 Creative Park)</b>: a former winery turned arts venue.</li>
+                <li><b>12:00 Lunch on Yongkang Street or in the East District</b>: try a local eatery.</li>
+                <li><b>14:00 松山文創園區 (Songshan Cultural and Creative Park)</b>: a colonial-era tobacco factory with varied exhibitions.</li>
+                <li><b>17:30 士林夜市 (Shilin Night Market)</b>: oyster omelette and "big cake wraps small cake".</li>
+            </ol>
+            Both parks count as cultural & creative activities — great for the Green Traveler badge.`,
+            ja: `<b>台北クリエイティブ半日旅</b>
+            <ol>
+                <li><b>10:00 華山1914文化創意産業園区</b>：旧酒工場をリノベーションしたアートスペース。</li>
+                <li><b>12:00 永康街か東区でランチ</b>：地元の小さなお店へ。</li>
+                <li><b>14:00 松山文創園区</b>：日本統治時代のたばこ工場。多彩な展示があります。</li>
+                <li><b>17:30 士林夜市</b>：牡蠣オムレツや「大餅包小餅」を。</li>
+            </ol>
+            どちらの園区も「文化・クリエイティブイベント」に当たるので、Green Traveler バッジ集めにぴったりです。`,
+            de: `<b>Ein halber Tag im kreativen Taipeh</b>
+            <ol>
+                <li><b>10:00 華山1914 (Huashan 1914 Creative Park)</b>: ehemalige Weinbrennerei, heute Kulturort.</li>
+                <li><b>12:00 Mittagessen in der Yongkang-Straße oder im East District</b>.</li>
+                <li><b>14:00 松山文創園區 (Songshan Cultural and Creative Park)</b>: alte Tabakfabrik mit vielfältigen Ausstellungen.</li>
+                <li><b>17:30 士林夜市 (Shilin-Nachtmarkt)</b>: Austernomelett und mehr.</li>
+            </ol>
+            Beide Parks zählen als Kulturveranstaltungen – ideal für das Abzeichen Green Traveler.`,
+        },
+        chips: {
+            'zh-TW': ['推薦夜市美食', '台南一日遊怎麼玩？'],
+            en: ['Night market food', 'Tainan day trip'],
+            ja: ['夜市グルメ', '台南の日帰り旅行'],
+            de: ['Nachtmarkt-Essen', 'Tagesausflug Tainan'],
+        },
     },
     {
-        keys: ['夜市', '美食', '小吃', '餐廳', '吃'],
-        reply: `想吃道地小吃的話：
+        keys: ['夜市', '美食', '小吃', '餐廳', '吃', 'night market', 'food', 'restaurant', 'グルメ', '屋台', 'nachtmarkt', 'essen'],
+        reply: {
+            'zh-TW': `想吃道地小吃的話：
             <ul>
                 <li><b>士林夜市</b>：台北最大觀光夜市，蚵仔煎、大餅包小餅必吃。</li>
                 <li><b>深坑老街</b>：以臭豆腐聞名，也保留清代街屋風貌。</li>
                 <li><b>台南安平</b>：蝦捲、蜜餞、豆花，適合邊走邊吃。</li>
             </ul>
             在 Explore Map 的左側欄勾選「Tourist restaurant」，就能只看餐廳。`,
-        chips: ['台南一日遊怎麼玩？', '徽章怎麼獲得？']
+            en: `For authentic street food:
+            <ul>
+                <li><b>士林夜市 (Shilin Night Market)</b>: Taipei's largest night market — try the oyster omelette.</li>
+                <li><b>深坑老街 (Shenkeng Old Street)</b>: famous for stinky tofu, with Qing-era shophouses.</li>
+                <li><b>台南安平 (Anping, Tainan)</b>: shrimp rolls, candied fruit and tofu pudding to eat as you stroll.</li>
+            </ul>
+            Tick "Tourist restaurant" in the Explore Map sidebar to show restaurants only.`,
+            ja: `ローカルグルメを楽しむなら：
+            <ul>
+                <li><b>士林夜市</b>：台北最大の観光夜市。牡蠣オムレツは必食です。</li>
+                <li><b>深坑老街</b>：臭豆腐で有名。清代の街並みも残ります。</li>
+                <li><b>台南・安平</b>：エビ巻き、砂糖漬け、豆花の食べ歩きに。</li>
+            </ul>
+            Explore Map のサイドバーで「Tourist restaurant」にチェックすると、レストランだけを表示できます。`,
+            de: `Für typisches Streetfood:
+            <ul>
+                <li><b>士林夜市 (Shilin-Nachtmarkt)</b>: Taipehs größter Nachtmarkt – unbedingt das Austernomelett probieren.</li>
+                <li><b>深坑老街 (Shenkeng-Altstadt)</b>: bekannt für Stinktofu, mit Häusern aus der Qing-Zeit.</li>
+                <li><b>台南安平 (Anping, Tainan)</b>: Garnelenrollen, kandierte Früchte und Tofupudding zum Schlendern.</li>
+            </ul>
+            Wähle in der Seitenleiste von Explore Map „Tourist restaurant", um nur Restaurants zu sehen.`,
+        },
+        chips: {
+            'zh-TW': ['台南一日遊怎麼玩？', '徽章怎麼獲得？'],
+            en: ['Tainan day trip', 'How do I get badges?'],
+            ja: ['台南の日帰り旅行', 'バッジのもらい方は？'],
+            de: ['Tagesausflug Tainan', 'Wie bekomme ich Abzeichen?'],
+        },
     },
     {
-        keys: ['花蓮', '太魯閣', '宜蘭', '東部', '自然', '溫泉', '冷泉'],
-        reply: `<b>東部自然文化行程（2 天）</b>
+        keys: ['花蓮', '太魯閣', '宜蘭', '東部', '自然', '溫泉', '冷泉', '温泉', 'hualien', 'yilan', 'taroko', 'hot spring', 'hot springs', 'quelle', 'quellen'],
+        reply: {
+            'zh-TW': `<b>東部自然文化行程（2 天）</b>
             <ol>
                 <li><b>Day 1 太魯閣國家公園</b>：欣賞大理石峽谷，並認識太魯閣族的織布與祭典文化。</li>
                 <li><b>Day 2 蘇澳冷泉</b>：全球少見的碳酸冷泉，水溫常年約 22°C，適合在山路後放鬆。</li>
             </ol>
             <span class="chat-note">山區天氣多變，出發前請先查詢道路與天氣狀況。</span>`,
-        chips: ['台北文青行程', '如何解鎖集章？']
+            en: `<b>Two days of nature and culture in the east</b>
+            <ol>
+                <li><b>Day 1 太魯閣國家公園 (Taroko National Park)</b>: marble gorges and the weaving and festival culture of the Truku people.</li>
+                <li><b>Day 2 蘇澳冷泉 (Su'ao Cold Spring)</b>: a rare carbonated cold spring at about 22°C all year.</li>
+            </ol>
+            <span class="chat-note">Mountain weather changes quickly — check road and weather conditions before you go.</span>`,
+            ja: `<b>東部の自然と文化 2 日間</b>
+            <ol>
+                <li><b>Day 1 太魯閣国家公園</b>：大理石の峡谷と、タロコ族の織物・祭りの文化に触れます。</li>
+                <li><b>Day 2 蘇澳冷泉</b>：世界でも珍しい炭酸冷泉。水温は一年中約 22°C です。</li>
+            </ol>
+            <span class="chat-note">山の天気は変わりやすいので、出発前に道路と天気を確認してください。</span>`,
+            de: `<b>Zwei Tage Natur und Kultur im Osten</b>
+            <ol>
+                <li><b>Tag 1 太魯閣國家公園 (Taroko-Nationalpark)</b>: Marmorschluchten und die Web- und Festkultur der Truku.</li>
+                <li><b>Tag 2 蘇澳冷泉 (Kaltquelle Su'ao)</b>: seltene kohlensäurehaltige Kaltquelle, ganzjährig etwa 22 °C.</li>
+            </ol>
+            <span class="chat-note">Das Bergwetter ändert sich schnell – prüfe vorher Straßen- und Wetterlage.</span>`,
+        },
+        chips: {
+            'zh-TW': ['台北文青行程', '如何解鎖集章？'],
+            en: ['Taipei creative parks', 'How do I unlock stamps?'],
+            ja: ['台北のおしゃれスポット', 'スタンプの集め方は？'],
+            de: ['Kreativparks in Taipeh', 'Wie sammle ich Stempel?'],
+        },
     },
     {
-        keys: ['九份', '老街', '鹿港', '深坑', '古蹟', '歷史'],
-        reply: `喜歡老街風情的話，推薦三條路線：
+        keys: ['九份', '老街', '鹿港', '深坑', '古蹟', '歷史', '歴史', 'old street', 'history', 'jiufen', 'altstadt', 'geschichte'],
+        reply: {
+            'zh-TW': `喜歡老街風情的話，推薦三條路線：
             <ul>
                 <li><b>九份老街</b>：山城夜景與茶樓，建議傍晚到。</li>
                 <li><b>深坑老街</b>：離台北近，保存完整的閩南式街屋。</li>
                 <li><b>鹿港老街</b>：清代街道格局，天后宮、龍山寺值得一看。</li>
             </ul>`,
-        chips: ['台南一日遊怎麼玩？', '推薦夜市美食']
+            en: `If you love old streets, try these three:
+            <ul>
+                <li><b>九份老街 (Jiufen Old Street)</b>: hillside views and teahouses — best in the late afternoon.</li>
+                <li><b>深坑老街 (Shenkeng Old Street)</b>: close to Taipei, with well-preserved Minnan-style shophouses.</li>
+                <li><b>鹿港老街 (Lukang Old Street)</b>: Qing-era street layout; visit Tianhou Temple and Longshan Temple.</li>
+            </ul>`,
+            ja: `老街の雰囲気が好きなら、この 3 か所がおすすめ：
+            <ul>
+                <li><b>九份老街</b>：山あいの夜景と茶藝館。夕方がおすすめです。</li>
+                <li><b>深坑老街</b>：台北から近く、閩南式の街並みがよく残っています。</li>
+                <li><b>鹿港老街</b>：清代の町並み。天后宮や龍山寺もぜひ。</li>
+            </ul>`,
+            de: `Wenn du historische Gassen magst, empfehle ich drei Orte:
+            <ul>
+                <li><b>九份老街 (Jiufen-Altstadt)</b>: Bergblick und Teehäuser – am schönsten am späten Nachmittag.</li>
+                <li><b>深坑老街 (Shenkeng-Altstadt)</b>: nahe Taipeh, gut erhaltene Häuser im Minnan-Stil.</li>
+                <li><b>鹿港老街 (Lukang-Altstadt)</b>: Straßen aus der Qing-Zeit; sehenswert sind Tianhou- und Longshan-Tempel.</li>
+            </ul>`,
+        },
+        chips: {
+            'zh-TW': ['台南一日遊怎麼玩？', '推薦夜市美食'],
+            en: ['Tainan day trip', 'Night market food'],
+            ja: ['台南の日帰り旅行', '夜市グルメ'],
+            de: ['Tagesausflug Tainan', 'Nachtmarkt-Essen'],
+        },
     },
     {
-        keys: ['你好', '哈囉', 'hi', 'hello', '嗨'],
-        reply: '你好！我是 Trail Guide，可以回答網站用法，也可以幫你規劃在地行程。想從哪裡開始？',
-        chips: DEFAULT_CHIPS
+        keys: ['你好', '哈囉', '嗨', 'hi', 'hello', 'こんにちは', 'hallo', 'guten tag'],
+        reply: {
+            'zh-TW': '你好！我是 Trail Guide，可以回答網站用法，也可以幫你規劃在地行程。想從哪裡開始？',
+            en: "Hi! I'm Trail Guide. I can explain how the site works and help you plan local trips. Where would you like to start?",
+            ja: 'こんにちは！Trail Guide です。サイトの使い方や、旅のプランづくりをお手伝いします。どこから始めましょう？',
+            de: 'Hallo! Ich bin Trail Guide. Ich erkläre dir die Seite und helfe bei der Reiseplanung. Womit fangen wir an?',
+        },
+        chips: DEFAULT_CHIPS_I18N,
     },
     {
-        keys: ['謝謝', '感謝', 'thanks'],
-        reply: '不客氣！旅途愉快，記得多拍幾張照片去集章 🎫',
-        chips: DEFAULT_CHIPS
+        keys: ['謝謝', '感謝', 'thanks', 'thank you', 'ありがとう', 'danke'],
+        reply: {
+            'zh-TW': '不客氣！旅途愉快，記得多拍幾張照片去集章 🎫',
+            en: "You're welcome! Have a great trip, and remember to take photos to collect stamps 🎫",
+            ja: 'どういたしまして！よい旅を。写真を撮ってスタンプを集めてくださいね 🎫',
+            de: 'Gern geschehen! Gute Reise – und vergiss nicht, Fotos für deine Stempel zu machen 🎫',
+        },
+        chips: DEFAULT_CHIPS_I18N,
     },
 ];
 
 const CHAT_FALLBACK = {
-    reply: `這個問題我還在學習中 🙏<br>目前的示範版本可以回答網站使用方式，以及台北、台南、東部和老街美食的行程建議。<span class="chat-note">未來接上真正的 AI 後，就能針對任何問題給出客製化的回答。</span>`,
-    chips: DEFAULT_CHIPS
+    reply: {
+        'zh-TW': `這個問題我還在學習中 🙏<br>目前是離線版，可以回答網站使用方式，以及台北、台南、東部和老街美食的行程建議。`,
+        en: `I'm still learning about that 🙏<br>This is the offline version: I can explain how the site works and suggest trips in Taipei, Tainan, the east coast and old streets.`,
+        ja: `その質問はまだ勉強中です 🙏<br>現在はオフライン版のため、サイトの使い方と、台北・台南・東部・老街グルメのおすすめをお答えできます。`,
+        de: `Das lerne ich noch 🙏<br>Dies ist die Offline-Version: Ich kann die Seite erklären und Ausflüge in Taipeh, Tainan, im Osten und in Altstädten empfehlen.`,
+    },
+    chips: DEFAULT_CHIPS_I18N,
+};
+
+const CHAT_TEXT = {
+    'zh-TW': { greeting: '嗨，{name}！我是你的在地嚮導 Trail Guide 🧭\n你可以問我網站怎麼用，或是想去哪裡玩，我來幫你安排行程。',
+               traveler: '旅人', online: 'AI 連線中', offline: '離線模式', checking: '連線檢查中',
+               thinking: 'AI 正在查資料，約需 10–30 秒…', offlineNote: 'AI 暫時無法連線，以下是離線版的回答。',
+               error: '抱歉，目前無法回應，請稍後再試。', placeTitle: '在地圖上查看：' },
+    en: { greeting: "Hi {name}! I'm your local guide, Trail Guide 🧭\nAsk me how the site works or where to go, and I'll help plan your trip.",
+          traveler: 'traveler', online: 'AI online', offline: 'Offline mode', checking: 'Checking',
+          thinking: 'The AI is looking things up — this takes about 10–30 seconds…', offlineNote: 'The AI is unavailable right now; this is the offline answer.',
+          error: 'Sorry, something went wrong. Please try again later.', placeTitle: 'Show on map:' },
+    ja: { greeting: 'こんにちは、{name}さん！ローカルガイドの Trail Guide です 🧭\nサイトの使い方や行きたい場所を聞いてください。旅のプランを考えます。',
+          traveler: '旅人', online: 'AI 接続中', offline: 'オフライン', checking: '接続確認中',
+          thinking: 'AI がデータを調べています（10〜30 秒ほど）…', offlineNote: 'AI に接続できないため、オフライン版の回答です。',
+          error: '申し訳ありません。しばらくしてからもう一度お試しください。', placeTitle: '地図で見る：' },
+    de: { greeting: 'Hallo {name}! Ich bin dein lokaler Guide, Trail Guide 🧭\nFrag mich, wie die Seite funktioniert oder wohin du reisen möchtest.',
+          traveler: 'Reisende*r', online: 'KI online', offline: 'Offline-Modus', checking: 'Verbindung wird geprüft',
+          thinking: 'Die KI sucht Daten – das dauert etwa 10–30 Sekunden…', offlineNote: 'Die KI ist gerade nicht erreichbar; dies ist die Offline-Antwort.',
+          error: 'Entschuldigung, bitte versuche es später noch einmal.', placeTitle: 'Auf der Karte zeigen:' },
 };
 
 let chatInited = false;
 let chatBusy = false;
+let agentOnline = false;
+let agentCheckedAt = 0;
+let chatHistory = [];   // 送給 Agent 的對話歷史（純文字）
 
-// 之後接真正的 AI，只要把這個函式換成 fetch 到後端即可
-async function getReply(text) {
+/* ── 語言：Phase 6 會加語言切換（存在 localStorage 的 tct_lang）；在那之前依問題的文字判斷 ── */
+function getSavedLang() {
+    try {
+        const v = localStorage.getItem('tct_lang');
+        return CHAT_LANGS.includes(v) ? v : null;
+    } catch { return null; }
+}
+
+function detectLang(text) {
+    if (/[぀-ヿ]/.test(text)) return 'ja';
+    const cjk = (text.match(/[一-鿿]/g) || []).length;
+    const latin = (text.match(/[A-Za-z]/g) || []).length;
+    if (cjk * 2 > latin) return 'zh-TW';
+    if (/[äöüß]|\b(ich|und|der|die|das|ist|nicht|wie|was|wo|kann|gibt|einen?|mit|für)\b/i.test(text)) return 'de';
+    return latin ? 'en' : 'zh-TW';
+}
+
+function chatLang(text = '') {
+    return getSavedLang() || (text ? detectLang(text) : 'zh-TW');
+}
+
+function t(lang, key) {
+    return (CHAT_TEXT[lang] || CHAT_TEXT['zh-TW'])[key];
+}
+
+/* ── Agent 連線狀態 ── */
+async function fetchWithTimeout(url, options, ms) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), ms);
+    try {
+        return await fetch(url, { ...options, signal: ctrl.signal });
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+function setAgentStatus(online, lang = chatLang()) {
+    agentOnline = online;
+    const el = document.getElementById('chatStatus');
+    if (!el) return;
+    el.textContent = t(lang, online ? 'online' : 'offline');
+    el.classList.toggle('online', online);
+    el.classList.toggle('offline', !online);
+}
+
+async function checkAgent() {
+    agentCheckedAt = Date.now();
+    try {
+        const res = await fetchWithTimeout(`${AGENT_BASE_URL}/health`, { cache: 'no-store' }, AGENT_HEALTH_TIMEOUT_MS);
+        const body = await res.json();
+        setAgentStatus(res.ok && body.ok === true);
+    } catch {
+        setAgentStatus(false);
+    }
+    return agentOnline;
+}
+
+/* ── 使用者位置：只有問到「附近」時才詢問，四捨五入到約 100 公尺，且只在臺灣範圍內才送出 ── */
+const NEARBY_WORDS = /附近|周邊|周遭|near me|nearby|around here|近く|周辺|in der nähe|nähe/i;
+
+function getNearbyContext(text) {
+    if (!NEARBY_WORDS.test(text) || !navigator.geolocation) return Promise.resolve(null);
+    return new Promise(resolve => {
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                const lat = Math.round(pos.coords.latitude * 1000) / 1000;
+                const lng = Math.round(pos.coords.longitude * 1000) / 1000;
+                const inTaiwan = lat >= 21 && lat <= 27 && lng >= 118 && lng <= 123;
+                resolve(inTaiwan ? { lat, lng } : null);
+            },
+            () => resolve(null),              // 使用者拒絕或取得失敗：不送位置
+            { timeout: 8000, maximumAge: 300000 }
+        );
+    });
+}
+
+/* ── 回覆來源 ── */
+function matchesKey(q, key) {
+    const k = key.toLowerCase();
+    // 英文關鍵字比對整個單字（避免 "this" 裡的 "hi" 被當成打招呼）；中日文比對部分字串
+    return /^[a-z0-9 ]+$/.test(k) ? new RegExp(`\\b${k}\\b`).test(q) : q.includes(k);
+}
+
+function offlineReply(text, lang) {
     const q = text.toLowerCase();
-    const hit = CHAT_KB.find(item => item.keys.some(k => q.includes(k.toLowerCase())));
-    await new Promise(r => setTimeout(r, 700 + Math.random() * 600)); // 模擬思考時間
-    return hit || CHAT_FALLBACK;
+    const hit = CHAT_KB.find(item => item.keys.some(k => matchesKey(q, k))) || CHAT_FALLBACK;
+    const pick = obj => obj[lang] || obj['zh-TW'];
+    return { reply: pick(hit.reply), chips: pick(hit.chips), html: true, source: 'offline' };
+}
+
+async function agentReply(text, lang) {
+    const context = await getNearbyContext(text);
+    const res = await fetchWithTimeout(`${AGENT_BASE_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            messages: chatHistory.slice(-CHAT_HISTORY_MAX),
+            lang,
+            ...(context ? { context } : {}),
+        }),
+    }, AGENT_CHAT_TIMEOUT_MS);
+    if (!res.ok) throw new Error('agent HTTP ' + res.status);
+    const body = await res.json();
+    if (typeof body.reply !== 'string') throw new Error('agent bad response');
+    return {
+        reply: body.reply,
+        chips: Array.isArray(body.chips) ? body.chips.filter(c => typeof c === 'string').slice(0, 6) : [],
+        locations: Array.isArray(body.locations) ? body.locations.filter(id => typeof id === 'string') : [],
+        route: body.route || null,
+        html: false,
+        source: 'agent',
+    };
+}
+
+// 介面維持 getReply(text) → { reply, chips }（另外多帶 locations、html、source 等欄位）
+async function getReply(text) {
+    const lang = chatLang(text);
+    chatHistory.push({ role: 'user', content: text });
+
+    if (!agentOnline && Date.now() - agentCheckedAt > AGENT_RECHECK_MS) await checkAgent();
+    if (agentOnline) {
+        try {
+            const res = await agentReply(text, lang);
+            chatHistory.push({ role: 'assistant', content: res.reply });
+            return res;
+        } catch (e) {
+            console.warn('Agent unavailable, using offline replies:', e.message);
+            setAgentStatus(false, lang);
+            const res = offlineReply(text, lang);
+            res.note = t(lang, 'offlineNote');
+            return res;
+        }
+    }
+    await new Promise(r => setTimeout(r, 500 + Math.random() * 400)); // 離線版：短暫停頓，比較自然
+    return offlineReply(text, lang);
+}
+
+/* ── 安全顯示 Agent 回覆：只用 textContent 建立元素，支援 **粗體**、編號／項目清單、換行 ── */
+function appendInline(parent, text) {
+    text.split(/(\*\*[^*]+\*\*)/g).forEach(part => {
+        if (!part) return;
+        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+            const b = document.createElement('b');
+            b.textContent = part.slice(2, -2);
+            parent.appendChild(b);
+        } else {
+            parent.appendChild(document.createTextNode(part));
+        }
+    });
+}
+
+function renderSafeText(container, text) {
+    container.textContent = '';
+    let list = null;
+    let box = container;   // 📊 路線摘要放在獨立的框裡
+    text.split('\n').forEach(raw => {
+        const line = raw.trim();
+        if (line.startsWith('📊')) {
+            box = document.createElement('div');
+            box.className = 'chat-route';
+            container.appendChild(box);
+            list = null;
+        }
+        const ordered = line.match(/^\d+[.)、．]\s*(.+)$/);
+        const bullet = line.match(/^[-*•]\s+(.+)$/);
+        if (ordered || bullet) {
+            const tag = ordered ? 'OL' : 'UL';
+            if (!list || list.tagName !== tag) {
+                list = document.createElement(tag.toLowerCase());
+                box.appendChild(list);
+            }
+            const li = document.createElement('li');
+            appendInline(li, (ordered || bullet)[1]);
+            list.appendChild(li);
+            return;
+        }
+        list = null;
+        if (!line) return;
+        const p = document.createElement('div');
+        p.className = 'chat-line';
+        appendInline(p, line);
+        box.appendChild(p);
+    });
+}
+
+// 地點按鈕：只顯示資料中真的存在的地點
+function renderLocationButtons(container, ids, lang) {
+    const locs = [...new Set(ids)].map(id => allLocations.find(l => l.id === id)).filter(Boolean);
+    if (!locs.length) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-locs';
+    const label = document.createElement('span');
+    label.className = 'chat-locs-label';
+    label.textContent = t(lang, 'placeTitle');
+    wrap.appendChild(label);
+    locs.forEach(loc => {
+        const b = document.createElement('button');
+        b.className = 'chat-loc-btn';
+        b.type = 'button';
+        b.textContent = '📍 ' + loc.name;
+        b.onclick = () => selectLocationById(loc.id);
+        wrap.appendChild(b);
+    });
+    container.appendChild(wrap);
+}
+
+// 依地點 id 在地圖上選取（selectLocation 吃的是陣列索引，這裡轉換一下）
+function selectLocationById(id) {
+    const i = allLocations.findIndex(l => l.id === id);
+    if (i < 0) return;
+    switchTab('map', document.querySelector(".tool-btn[onclick*=\"'map'\"]"));
+    setTimeout(() => selectLocation(i), 80);   // 等地圖分頁顯示、尺寸更新後再移動
 }
 
 function initChat() {
     if (chatInited) return;
     chatInited = true;
-    const name = document.getElementById('passport-name').textContent || '旅人';
-    addChatMsg('bot', `嗨，${name}！我是你的在地嚮導 Trail Guide 🧭<br>你可以問我網站怎麼用，或是想去哪裡玩，我來幫你安排行程。`);
-    setChatChips(DEFAULT_CHIPS);
+    const lang = chatLang();
+    const name = document.getElementById('passport-name').textContent || t(lang, 'traveler');
+    // 名稱是使用者輸入的：用安全方式顯示，不用 innerHTML
+    const row = addChatMsg('bot', '', false);
+    renderSafeText(row.querySelector('.chat-bubble'), t(lang, 'greeting').replace('{name}', name));
+    setChatChips(DEFAULT_CHIPS_I18N[lang]);
 }
 
 function addChatMsg(role, content, isHtml = true) {
@@ -1764,7 +2282,8 @@ function addChatMsg(role, content, isHtml = true) {
 
     const bubble = document.createElement('div');
     bubble.className = 'chat-bubble';
-    if (isHtml) bubble.innerHTML = content; else bubble.textContent = content; // 使用者輸入一律用 textContent，避免 XSS
+    // innerHTML 只用於我們自己寫的固定內容（離線版問答）；使用者輸入與 Agent 回覆一律不用
+    if (isHtml) bubble.innerHTML = content; else bubble.textContent = content;
 
     row.append(av, bubble);
     box.appendChild(row);
@@ -1787,8 +2306,9 @@ function setChatChips(list) {
 async function sendChat(presetText) {
     if (chatBusy) return;
     const input = document.getElementById('chatInput');
-    const text = (presetText ?? input.value).trim();
+    const text = (presetText ?? input.value).trim().slice(0, 200);
     if (!text) return;
+    const lang = chatLang(text);
 
     input.value = '';
     chatBusy = true;
@@ -1797,14 +2317,35 @@ async function sendChat(presetText) {
 
     addChatMsg('user', text, false);
     const typingRow = addChatMsg('bot', '<span class="typing"><span></span><span></span><span></span></span>');
+    const bubble = typingRow.querySelector('.chat-bubble');
+    // Agent 回答需要一點時間：超過 4 秒就提示一下，避免以為當機
+    const slowHint = setTimeout(() => {
+        const hint = document.createElement('span');
+        hint.className = 'chat-note';
+        hint.textContent = t(lang, 'thinking');
+        bubble.appendChild(hint);
+    }, 4000);
 
     try {
         const res = await getReply(text);
-        typingRow.querySelector('.chat-bubble').innerHTML = res.reply;
+        clearTimeout(slowHint);
+        if (res.html) {
+            bubble.innerHTML = res.reply;          // 只有離線版固定內容
+        } else {
+            renderSafeText(bubble, res.reply);     // Agent 回覆：安全顯示
+            renderLocationButtons(bubble, res.locations || [], lang);
+        }
+        if (res.note) {
+            const note = document.createElement('span');
+            note.className = 'chat-note';
+            note.textContent = res.note;
+            bubble.prepend(note);
+        }
         setChatChips(res.chips);
     } catch (e) {
-        typingRow.querySelector('.chat-bubble').textContent = '抱歉，目前無法回應，請稍後再試。';
-        setChatChips(DEFAULT_CHIPS);
+        clearTimeout(slowHint);
+        bubble.textContent = t(lang, 'error');
+        setChatChips(DEFAULT_CHIPS_I18N[lang]);
     } finally {
         chatBusy = false;
         document.getElementById('chatSend').disabled = false;
@@ -1813,6 +2354,9 @@ async function sendChat(presetText) {
         input.focus();
     }
 }
+
+// 頁面載入時就先檢查 Agent，聊天標頭立刻顯示連線狀態
+checkAgent();
 
 /* ══════════════════════════════════════════════════
    BOOT

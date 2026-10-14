@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 MAX_MESSAGE_CHARS = 200   # 使用者訊息上限，與前端 maxlength=200 一致
-MAX_ASSISTANT_CHARS = 800 # 前端回傳的歷史 AI 回覆，超過就截斷（不拒絕）
+MAX_ASSISTANT_CHARS = 300 # 前端回傳的歷史 AI 回覆，超過就截斷（不拒絕）；越短模型讀得越快
 MAX_HISTORY = 6           # 只保留最近 6 則
 SUPPORTED_LANGS = ("zh-TW", "en", "ja", "de")
 

@@ -1,4 +1,6 @@
 """plan_route：多個地點的參觀順序、各段距離與各交通方式碳排。"""
+import re
+
 from .. import carbon, data
 from ..geo import haversine_m
 
@@ -32,11 +34,30 @@ def resolve(ref: str) -> dict | None:
     if not name:
         return None
     locs = data.get_locations()
-    exact = [x for x in locs if x["_name"] == name]
+    exact = [x for x in locs if x["_name"] == name or _match_key(x["name"]) == name]
     if exact:
         return exact[0]
     partial = [x for x in locs if name in x["_name"]]
     return partial[0] if len(partial) == 1 else None
+
+
+def _match_key(name: str) -> str:
+    """比對用名稱：去掉括號內的別名，例如「湯圍溝溫泉公園(湯圍風呂)」→「湯圍溝溫泉公園」。"""
+    return data.normalize(re.sub(r"[（(].*?[)）]", "", name))
+
+
+def find_place_names(text: str, max_names: int = 8) -> list[str]:
+    """找出句子中提到的資料地名（依出現順序，長名稱優先、不重疊）。"""
+    q = data.normalize(text)
+    hits = []
+    for loc in sorted(data.get_locations(), key=lambda x: -len(_match_key(x["name"]))):
+        key = _match_key(loc["name"])
+        if len(key) < 3:
+            continue
+        pos = q.find(key)
+        if pos >= 0 and not any(pos < e and pos + len(key) > s for s, e, _ in hits):
+            hits.append((pos, pos + len(key), loc["name"]))
+    return [name for _, _, name in sorted(hits)][:max_names]
 
 
 def nearest_neighbor(locs: list[dict]) -> list[dict]:

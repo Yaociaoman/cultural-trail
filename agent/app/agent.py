@@ -9,6 +9,7 @@ from . import guard, ollama_client, tools
 from .lang import wrong_language
 from .prompt import LANG_NAMES, build_system_prompt
 from .schemas import ChatRequest
+from .tools.plan_route import find_place_names
 from .tools.search_locations import parse_query
 
 log = logging.getLogger("agent.loop")
@@ -39,6 +40,10 @@ _NEEDS_DATA = re.compile(
     r"観光|おすすめ|何が|どこ|近く|スタンプ|"
     r"besuchen|empfehl|Sehensw|wo |Nähe|Stempel", re.IGNORECASE)
 
+_ROUTE_WORDS = re.compile(r"路線|怎麼去|怎麼走|交通|碳排|環保|到.+的路|route|get to|travel from|carbon|"
+                          r"行き方|ルート|Route|Weg|anreisen|Kohlendioxid|CO2", re.IGNORECASE)
+_NEARBY_WORDS = re.compile(r"附近|周邊|周遭|near me|nearby|around here|近く|周辺|in der Nähe|Nähe", re.IGNORECASE)
+
 _SITE_TOPICS = [
     ("stamp", re.compile(r"集章|解鎖|蓋章|上傳|stamp|スタンプ|Stempel", re.IGNORECASE)),
     ("badge", re.compile(r"徽章|通行證|badge|バッジ|Abzeichen", re.IGNORECASE)),
@@ -62,12 +67,22 @@ def needs_data(text: str) -> bool:
     return bool(city or category or _NEEDS_DATA.search(text))
 
 
-def auto_tool_call(text: str) -> dict:
-    """模型沒有自己查資料時，由伺服器代查：網站問題查說明，其他查地點。"""
+def _call(name: str, **args) -> dict:
+    return {"function": {"name": name, "arguments": args}}
+
+
+def auto_tool_call(text: str, lat: float | None = None, lng: float | None = None) -> dict:
+    """伺服器依問題先查資料（小模型常不查就回答，而且多一輪呼叫在 M1 上要多 15–20 秒）。"""
+    if _ROUTE_WORDS.search(text):
+        names = find_place_names(text)
+        if len(names) >= 2:
+            return _call("plan_route", locations=names)
+    if _NEARBY_WORDS.search(text) and lat is not None and lng is not None:
+        return _call("nearby_locations", lat=lat, lng=lng)
     for topic, pattern in _SITE_TOPICS:
         if pattern.search(text):
-            return {"function": {"name": "get_site_help", "arguments": {"topic": topic}}}
-    return {"function": {"name": "search_locations", "arguments": {"query": text}}}
+            return _call("get_site_help", topic=topic)
+    return _call("search_locations", query=text, limit=5)   # 結果少一點，小模型讀寫都比較快
 
 
 def _collect_ids(result: dict) -> list[str]:
@@ -89,19 +104,8 @@ async def _loop(req: ChatRequest, used_tools: list[str], found: dict) -> str:
     tool_ctx = {"lang": req.lang}
     tool_defs = tools.ollama_tools()
 
-    last_user = req.recent()[-1].content
-    for _ in range(MAX_TOOL_ROUNDS):
-        msg = await ollama_client.chat(messages, tool_defs)
-        calls = msg.get("tool_calls") or []
-        if not calls:
-            # 小模型有時不查資料就直接回答（容易編造地點或功能）：伺服器代查一次，丟掉它原本的回答
-            if not used_tools and needs_data(last_user):
-                msg, calls = {"content": ""}, [auto_tool_call(last_user)]
-                used_tools.append("auto")
-            else:
-                return msg.get("content", "")
-
-        messages.append({"role": "assistant", "content": msg.get("content", ""), "tool_calls": calls})
+    def run_calls(calls: list[dict], content: str = "") -> None:
+        messages.append({"role": "assistant", "content": content, "tool_calls": calls})
         for call in calls[:MAX_TOOL_CALLS_PER_ROUND]:
             fn = call.get("function") or {}
             name, args = fn.get("name", ""), fn.get("arguments") or {}
@@ -118,6 +122,19 @@ async def _loop(req: ChatRequest, used_tools: list[str], found: dict) -> str:
                 found["ids"] += result["order"]
             messages.append({"role": "tool", "tool_name": name,
                              "content": json.dumps(result, ensure_ascii=False)})
+
+    # 需要資料的問題：先由伺服器查好，模型通常一次就能回答
+    last_user = req.recent()[-1].content
+    if needs_data(last_user):
+        used_tools.append("auto")
+        run_calls([auto_tool_call(last_user, ctx.lat if ctx else None, ctx.lng if ctx else None)])
+
+    for _ in range(MAX_TOOL_ROUNDS):
+        msg = await ollama_client.chat(messages, tool_defs)
+        calls = msg.get("tool_calls") or []
+        if not calls:
+            return msg.get("content", "")
+        run_calls(calls, msg.get("content", ""))
 
     # 超過工具呼叫上限：不給工具，強制用現有資料回答
     messages.append({"role": "system", "content": FORCE_ANSWER.get(req.lang, FORCE_ANSWER["zh-TW"])})

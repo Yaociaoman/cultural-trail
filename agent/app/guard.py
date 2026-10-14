@@ -23,9 +23,9 @@ _MD_LINK = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
 _URL = re.compile(r"(?:https?://|www\.)\S+", re.IGNORECASE)
 _RAW_ID = re.compile(r"\b(?:Attraction|Restaurant|Event|Hotel)_[A-Za-z0-9_]+\b")
 _INTERNAL = re.compile(r"search_locations|get_location|nearby_locations|plan_route|estimate_carbon|"
-                       r"get_site_help|get_my_progress|tool_calls?|地點\s*id|\bid\b", re.IGNORECASE)
+                       r"get_site_help|get_my_progress|tool_calls?|地點\s*id|\bid\b|工具(?:查詢|結果|回傳)|the tool", re.IGNORECASE)
 _LIST_ITEM = re.compile(r"^(\s*)(\d+[.)、．]|[-*•])\s*(.*)$")
-NAME_FIX_RATIO = 0.75
+NAME_FIX_RATIO = 0.8
 # 句子：到中文句號／問號／驚嘆號、英文句點（後面接空白，避免切到 53.9 這種小數）或換行為止
 _SENTENCE = re.compile(r"[^\n]*?(?:[。！？!?]|\.(?=\s|$)|\n|$)")
 
@@ -146,8 +146,34 @@ def finalize_route(reply: str, route: dict | None, lang: str) -> str:
     return f"{''.join(kept).strip()}\n\n{route_summary(route, lang)}".strip()
 
 
+_NAME_SEGMENT = re.compile(r"^(\**)([^，,：:、。\s*]+)(\**)(.*)$")
+
+
+def _strip_alias(name: str) -> str:
+    return re.sub(r"[（(].*?[)）]", "", name)
+
+
+def _closest_name(segment: str, names: list[str]) -> str | None:
+    """地名片段若與某個工具查到的地名只差一兩個字，回傳正式名稱；完全相同或差太多都回傳 None。"""
+    if any(segment in (n, _strip_alias(n)) for n in names):
+        return None                                   # 已經是正確名稱（含省略括號別名）
+    best, ratio = None, 0.0
+    for name in names:
+        for form in (name, _strip_alias(name)):
+            if abs(len(form) - len(segment)) > 2:
+                continue
+            r = SequenceMatcher(None, segment, form).ratio()
+            # 短地名錯一個字時 ratio 偏低（4 個字錯 1 個 = 0.75）：長度相同且只差一個字也算
+            if len(form) == len(segment) >= 4 and sum(a != b for a, b in zip(form, segment)) == 1:
+                r = max(r, NAME_FIX_RATIO)
+            if r > ratio:
+                best, ratio = name, r
+    return best if ratio >= NAME_FIX_RATIO else None
+
+
 def fix_list_names(reply: str, candidate_ids: list[str]) -> str:
-    """清單項目開頭的地名若與工具查到的地名只差一兩個字，改回正式名稱；重複的項目（含底下的子項目）移除並重新編號。"""
+    """清單項目開頭的地名若寫錯字（與工具查到的地名只差一兩個字），改回正式名稱；
+    重複的項目（含底下的子項目）移除並重新編號。"""
     names = [loc["name"] for i in dict.fromkeys(candidate_ids) if (loc := data.get_by_id(i))]
     if not names:
         return reply
@@ -159,14 +185,12 @@ def fix_list_names(reply: str, candidate_ids: list[str]) -> str:
             continue
         indent, marker, body = m.groups()
         if marker[0].isdigit() and not indent:
-            # 主項目：校正地名
-            best, ratio = None, 0.0
-            for name in names:
-                r = SequenceMatcher(None, body[:len(name)], name).ratio()
-                if r > ratio:
-                    best, ratio = name, r
-            if best and NAME_FIX_RATIO <= ratio < 1:
-                body = best + body[len(best):]
+            # 主項目：只比對開頭的地名片段（到第一個逗號／冒號為止），整段替換，不會多出或吃掉字
+            seg = _NAME_SEGMENT.match(body)
+            if seg:
+                fixed = _closest_name(seg.group(2), names)
+                if fixed:
+                    body = f"{seg.group(1)}{fixed}{seg.group(3)}{seg.group(4)}"
             key = data.normalize(body)
             skipping = key in seen
             seen.add(key)
