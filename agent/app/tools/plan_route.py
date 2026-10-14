@@ -80,7 +80,7 @@ def run(locations: list[str]) -> dict:
 
     total_km = round(sum(l["km"] for l in legs) - sea_km, 1)   # 碳排只算陸路
     usable = {m for m in carbon.MODES if all(m in l["modes"] for l in legs if l["modes"])}
-    compare = [m for m in ("bus", "train", "metro", "motorcycle", "car") if m in usable]
+    compare = [m for m in ("bus", "train", "motorcycle", "car") if m in usable]
     car_kg = carbon.kg("car", total_km)
     suggested_kg = round(suggested_kg, 3)
     out = {

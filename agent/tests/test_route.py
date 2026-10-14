@@ -25,10 +25,10 @@ def test_mode_distance_limits():
     assert "train" not in carbon.feasible_modes(5) and "train" in carbon.feasible_modes(20)
 
 
-def test_metro_only_in_metro_cities():
-    assert "metro" in carbon.feasible_modes(5, "臺北市", "新北市")
-    assert "metro" not in carbon.feasible_modes(5, "臺南市", "臺南市")
-    assert "metro" not in carbon.feasible_modes(5, "臺北市", "宜蘭縣")
+def test_metro_not_used():
+    # 官方資料沒有捷運係數，暫不計算
+    assert "metro" not in carbon.factors()
+    assert "metro" not in carbon.feasible_modes(5, "臺北市", "新北市")
 
 
 def test_hsr_only_on_west_corridor():
@@ -45,7 +45,7 @@ def test_islands():
 
 def test_suggest_lowest_carbon():
     assert carbon.suggest(["walk", "bicycle", "bus", "car"]) == "walk"
-    assert carbon.suggest(["metro", "bus", "car"]) == "metro"
+    assert carbon.suggest(["bus", "motorcycle", "car"]) == "bus"
     assert carbon.suggest(["train", "hsr", "bus", "car"]) == "hsr"
 
 
@@ -62,7 +62,7 @@ def test_route_nearest_neighbor_order():
 def test_route_accepts_names_and_ids():
     r = run_tool("plan_route", {"locations": ["華山1914文化創意產業園區", "A_TP_2"]})
     assert r["order"] == ["A_TP_1", "A_TP_2"]
-    assert "metro" in r["legs"][0]["modes"]   # 都在臺北市
+    assert r["legs"][0]["suggested"] == "bicycle"   # 約 7 km：超過步行範圍、在腳踏車範圍內
 
 
 def test_route_numbers_consistent():

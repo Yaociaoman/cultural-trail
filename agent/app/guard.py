@@ -89,13 +89,13 @@ def clean_reply(text: str, lang: str) -> str:
 _NUMBER_WITH_UNIT = re.compile(r"\d+(?:[.,]\d+)?\s*(?:公里|公尺|公斤|kilomet|km|kg|キロ|㎞|㎏)", re.IGNORECASE)
 
 MODE_NAMES = {
-    "zh-TW": {"walk": "步行", "bicycle": "腳踏車", "metro": "捷運", "train": "臺鐵", "hsr": "高鐵",
+    "zh-TW": {"walk": "步行", "bicycle": "腳踏車", "train": "臺鐵", "hsr": "高鐵",
               "bus": "公車／客運", "motorcycle": "機車", "car": "自駕"},
-    "en": {"walk": "walking", "bicycle": "cycling", "metro": "metro", "train": "train", "hsr": "high-speed rail",
+    "en": {"walk": "walking", "bicycle": "cycling", "train": "train", "hsr": "high-speed rail",
            "bus": "bus", "motorcycle": "scooter", "car": "car"},
-    "ja": {"walk": "徒歩", "bicycle": "自転車", "metro": "MRT", "train": "台湾鉄道", "hsr": "高速鉄道",
+    "ja": {"walk": "徒歩", "bicycle": "自転車", "train": "台湾鉄道", "hsr": "高速鉄道",
            "bus": "バス", "motorcycle": "バイク", "car": "車"},
-    "de": {"walk": "zu Fuß", "bicycle": "Fahrrad", "metro": "U-Bahn", "train": "Zug", "hsr": "Schnellzug",
+    "de": {"walk": "zu Fuß", "bicycle": "Fahrrad", "train": "Zug", "hsr": "Schnellzug",
            "bus": "Bus", "motorcycle": "Motorroller", "car": "Auto"},
 }
 

@@ -11,7 +11,8 @@ FACTORS_PATH = config.AGENT_DIR / "config" / "carbon_factors.json"
 
 DETOUR = 1.3   # 直線距離 × 繞路係數 = 估算路程
 
-MODES = ["walk", "bicycle", "metro", "train", "hsr", "bus", "motorcycle", "car"]
+# 捷運：官方碳足跡資料沒有係數，依使用者決定暫不列入
+MODES = ["walk", "bicycle", "train", "hsr", "bus", "motorcycle", "car"]
 
 # 單段距離限制（公里）：(最短, 最長)；None 代表不限
 MODE_RANGE = {
@@ -21,8 +22,6 @@ MODE_RANGE = {
     "hsr": (40, None),
 }
 
-# 有捷運的縣市（兩端都在這些縣市才建議捷運）
-METRO_CITIES = {"臺北市", "新北市", "桃園市", "臺中市", "高雄市"}
 # 高鐵沿線縣市（西部走廊；兩端都在這些縣市且跨縣市才建議高鐵）
 HSR_CITIES = {"臺北市", "新北市", "桃園市", "新竹縣", "新竹市", "苗栗縣", "臺中市", "彰化縣",
               "雲林縣", "嘉義縣", "嘉義市", "臺南市", "高雄市"}
@@ -56,8 +55,6 @@ def feasible_modes(km: float, city_a: str = "", city_b: str = "") -> list[str]:
     for mode in MODES:
         lo, hi = MODE_RANGE.get(mode, (None, None))
         if (lo is not None and km < lo) or (hi is not None and km > hi):
-            continue
-        if mode == "metro" and not (city_a in METRO_CITIES and city_b in METRO_CITIES):
             continue
         if mode == "hsr" and not (city_a in HSR_CITIES and city_b in HSR_CITIES and city_a != city_b):
             continue
