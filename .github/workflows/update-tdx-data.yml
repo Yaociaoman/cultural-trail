@@ -18,11 +18,17 @@ jobs:
         with:
           node-version: 22
 
-      - name: Fetch TDX data
-        env:
-          TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
-          TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
-        run: node scripts/fetch-tdx.mjs
+      # 【已停用】原本透過 TDX API 抓資料（需要 TDX 金鑰），2026-10-14 改用 data.gov.tw 官方開放資料集
+      # 要恢復時：取消下面 5 行的註解，並註解掉「Fetch data.gov.tw open data」這一步
+      # - name: Fetch TDX data
+      #   env:
+      #     TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
+      #     TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
+      #   run: node scripts/fetch-tdx.mjs
+
+      # 從政府資料開放平臺下載交通部觀光署的觀光資訊資料庫（免金鑰），各縣市平均挑選
+      - name: Fetch data.gov.tw open data
+        run: node scripts/fetch-opendata.mjs
 
       - name: Commit if changed
         run: |
