@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/exif-js@2.3.0/exif.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Noto+Serif+TC:wght@300;400;600&display=swap">
+    <link rel="stylesheet" href="carbon/route-panel.css">
     <title>Taiwan Cultural Trails</title>
     <style>
         :root {
@@ -601,6 +602,7 @@
         <div id="map"></div>
         <div id="map-counter"></div>
         <div id="api-status"></div>
+        <div id="tripPanel"></div><!-- 行程路線與碳排（carbon/route-panel.js） -->
     </div>
 
     <div class="info-panel" id="infoPanel">
@@ -615,6 +617,7 @@
             <div class="panel-addr" id="panelAddr"></div>
         </div>
         <div class="panel-links" id="panelLinks"></div>
+        <div class="panel-links" id="tripSlot"></div><!-- 「加入行程」按鈕（carbon/route-panel.js） -->
     </div>
 </div>
 
@@ -1664,30 +1667,34 @@ const CHAT_KB = [
     {
         keys: ['怎麼使用', '如何使用', '怎麼用', '使用方式', '教學', 'how to use', 'how do i use', '使い方', 'benutze', 'wie funktioniert'],
         reply: {
-            'zh-TW': `歡迎來到 Taiwan Cultural Trails！主要有三個功能：
+            'zh-TW': `歡迎來到 Taiwan Cultural Trails！主要有四個功能：
             <ol>
                 <li><b>Explore Map</b>：在地圖上瀏覽景點、餐廳與文化活動，可用左側欄搜尋與分類篩選。</li>
+                <li><b>我的行程（地圖頁）</b>：點景點按「加入行程」（最多 8 個），選起點與人數後按「查詢路線」，就能比較每一段各種交通方式的時間與碳排，並看到低碳建議。</li>
                 <li><b>Stamp Collection</b>：實際造訪後上傳照片，就能解鎖該地點的集章。</li>
                 <li><b>AI Guide</b>：也就是我，可以幫你規劃行程。</li>
             </ol>
             想知道集章怎麼解鎖嗎？`,
-            en: `Welcome to Taiwan Cultural Trails! There are three main features:
+            en: `Welcome to Taiwan Cultural Trails! There are four main features:
             <ol>
                 <li><b>Explore Map</b>: browse attractions, restaurants and cultural activities; search and filter in the sidebar.</li>
+                <li><b>My Trip (on the map)</b>: tap “Add to trip” on up to 8 places, choose a starting point and the number of travellers, then “Find routes” to compare time and carbon for each leg and see a low-carbon suggestion.</li>
                 <li><b>Stamp Collection</b>: visit a place and upload a photo to unlock its stamp.</li>
                 <li><b>AI Guide</b>: that's me — I can help you plan your trip.</li>
             </ol>
             Want to know how to unlock stamps?`,
-            ja: `Taiwan Cultural Trails へようこそ！主な機能は 3 つです：
+            ja: `Taiwan Cultural Trails へようこそ！主な機能は 4 つです：
             <ol>
                 <li><b>Explore Map</b>：地図で観光地・レストラン・文化イベントを探せます。左のサイドバーで検索・絞り込みできます。</li>
+                <li><b>マイ旅程（地図ページ）</b>：スポットを「旅程に追加」（最大 8 か所）し、出発地と人数を選んで「ルート検索」を押すと、区間ごとに交通手段の所要時間と CO₂ 排出量を比べ、低炭素なおすすめを確認できます。</li>
                 <li><b>Stamp Collection</b>：現地で撮った写真をアップロードすると、その場所のスタンプがもらえます。</li>
                 <li><b>AI Guide</b>：わたしです。旅のプランづくりをお手伝いします。</li>
             </ol>
             スタンプの集め方も知りたいですか？`,
-            de: `Willkommen bei Taiwan Cultural Trails! Es gibt drei Hauptfunktionen:
+            de: `Willkommen bei Taiwan Cultural Trails! Es gibt vier Hauptfunktionen:
             <ol>
                 <li><b>Explore Map</b>: Sehenswürdigkeiten, Restaurants und Kulturveranstaltungen auf der Karte entdecken; Suche und Filter in der Seitenleiste.</li>
+                <li><b>Meine Reise (auf der Karte)</b>: Bis zu 8 Orte mit „Zur Reise hinzufügen“ auswählen, Startpunkt und Personenzahl festlegen und „Routen suchen“ tippen – so vergleichst du Zeit und CO₂ je Abschnitt und erhältst eine klimafreundliche Empfehlung.</li>
                 <li><b>Stamp Collection</b>: Vor Ort ein Foto hochladen, um den Stempel des Ortes freizuschalten.</li>
                 <li><b>AI Guide</b>: Das bin ich – ich helfe dir bei der Reiseplanung.</li>
             </ol>
@@ -2486,5 +2493,9 @@ fetchCultureData().then(locs => {
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- 行程路線與碳排（B）：需在主程式之後載入 -->
+<script src="carbon/strings.js"></script>
+<script src="carbon/carbon-core.js"></script>
+<script src="carbon/route-panel.js"></script>
 </body>
 </html>

@@ -1,0 +1,117 @@
+/* 行程路線與碳排：沿用 index.html 的 CSS 變數（日夜模式自動切換） */
+
+/* 資訊面板中的「加入行程」 */
+#tripSlot:empty { display: none; }
+#tripSlot { padding-top: 0; }
+.trip-slot-btn { width: 100%; background: var(--whale-blue); color: var(--paper-white); border: none; }
+.trip-slot-btn.added { background: transparent; color: var(--brick-red); border: 1px solid var(--brick-red); }
+body.night .trip-slot-btn.added { color: var(--brick-light); border-color: var(--brick-light); }
+
+/* 選起點模式 */
+#map.trip-picking, #map.trip-picking .leaflet-interactive { cursor: crosshair; }
+
+/* 景點順序編號 */
+.trip-num-icon { background: var(--stamp-gold); color: #fff; border: 2px solid #fff; border-radius: 50%;
+    font: 700 11px/16px 'Playfair Display', Georgia, serif; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.35); }
+
+/* 行程面板（地圖左下角，可收合） */
+#tripPanel { position: absolute; left: 12px; bottom: 28px; z-index: 850; width: 340px; max-width: calc(100% - 24px);
+    max-height: calc(100% - 110px); display: flex; flex-direction: column; background: var(--panel-bg); color: var(--text);
+    border: 1.5px solid var(--stamp-gold); border-radius: 8px; box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+    font-family: 'Noto Serif TC', serif; font-size: 0.78rem; transition: background 0.5s; }
+#tripPanel button { font-family: inherit; }
+.trip-head { display: flex; align-items: center; gap: 0.5rem; width: 100%; padding: 0.55rem 0.8rem; border: none;
+    background: var(--whale-blue); color: var(--paper-white); border-radius: 6px 6px 0 0; cursor: pointer; text-align: left; flex-shrink: 0; }
+#tripPanel.collapsed .trip-head { border-radius: 6px; }
+.trip-head-title { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em; }
+.trip-head-count { font-size: 0.68rem; opacity: 0.8; }
+.trip-head-caret { margin-left: auto; }
+.trip-body { padding: 0.7rem 0.8rem 0.8rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; }
+
+.trip-empty, .trip-note, .trip-disclaimer { font-size: 0.7rem; opacity: 0.75; line-height: 1.6; }
+.trip-msg { font-size: 0.72rem; color: var(--brick-red); line-height: 1.6; }
+body.night .trip-msg { color: var(--brick-light); }
+
+.trip-stops { list-style: decimal; padding-left: 1.3rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.trip-stops li { line-height: 1.4; }
+.trip-stops li > * { vertical-align: middle; }
+.trip-stops li { display: list-item; }
+.trip-stop-name { display: inline-block; max-width: calc(100% - 78px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trip-stop-actions { float: right; display: inline-flex; gap: 2px; }
+.trip-stop-actions button { width: 22px; height: 22px; border: 1px solid var(--beige); background: transparent; color: var(--text);
+    border-radius: 3px; cursor: pointer; font-size: 0.6rem; line-height: 1; }
+.trip-stop-actions button:disabled { opacity: 0.3; cursor: default; }
+.trip-stop-actions button:not(:disabled):hover { border-color: var(--stamp-gold); }
+
+.trip-row { display: flex; flex-direction: column; gap: 0.3rem; }
+.trip-label { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--stamp-gold); }
+.trip-origin-text { font-size: 0.74rem; }
+.trip-btns { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.trip-btn { flex: 1; min-width: 120px; padding: 0.4rem 0.5rem; border: 1px solid var(--seafoam); background: transparent; color: var(--text);
+    border-radius: 4px; cursor: pointer; font-size: 0.72rem; }
+.trip-btn.active { background: var(--seafoam); color: #fff; }
+.trip-btn:disabled { opacity: 0.6; cursor: default; }
+
+.trip-people { flex-direction: row; align-items: center; gap: 0.4rem; }
+.trip-people .trip-label { margin-right: auto; }
+.trip-people input { width: 3.2rem; padding: 0.25rem; text-align: center; border: 1px solid var(--beige); border-radius: 4px;
+    background: var(--bg); color: var(--text); font-family: inherit; }
+.trip-step { width: 26px; height: 26px; border: 1px solid var(--beige); background: transparent; color: var(--text); border-radius: 50%; cursor: pointer; }
+.trip-step:disabled { opacity: 0.35; cursor: default; }
+
+.trip-query { padding: 0.55rem; border: none; border-radius: 4px; background: var(--brick-red); color: var(--paper-white);
+    cursor: pointer; letter-spacing: 0.1em; font-size: 0.78rem; }
+.trip-query:hover { background: var(--brick-light); }
+
+.trip-results { display: flex; flex-direction: column; gap: 0.6rem; border-top: 1px dashed var(--beige); padding-top: 0.6rem; }
+.trip-link { align-self: flex-start; padding: 0; border: none; background: none; color: var(--seafoam); text-decoration: underline; cursor: pointer; font-size: 0.72rem; }
+
+.trip-leg, .trip-summary { border: 1px solid var(--beige); border-radius: 6px; padding: 0.55rem 0.6rem; }
+body.night .trip-leg, body.night .trip-summary { border-color: #54493f; }
+.trip-leg h4, .trip-summary h4 { font-size: 0.78rem; line-height: 1.4; color: var(--brick-red); word-break: break-word; }
+body.night .trip-leg h4, body.night .trip-summary h4 { color: var(--stamp-gold); }
+.trip-leg-km { font-size: 0.66rem; opacity: 0.7; margin-bottom: 0.25rem; }
+.trip-suggest { font-size: 0.72rem; line-height: 1.6; background: rgba(90,143,143,0.12); border-radius: 4px; padding: 0.35rem 0.5rem; margin-bottom: 0.35rem; }
+.trip-summary { background: rgba(201,148,58,0.08); }
+.trip-summary p { line-height: 1.7; }
+.trip-sum-car { font-weight: 600; color: var(--seafoam); }
+
+.trip-options { display: flex; flex-direction: column; gap: 0.25rem; }
+.trip-opt { display: flex; gap: 0.45rem; align-items: flex-start; padding: 0.35rem 0.4rem; border-radius: 4px; cursor: pointer; border: 1px solid transparent; }
+.trip-opt:hover { background: rgba(201,148,58,0.08); }
+.trip-opt.chosen { border-color: var(--stamp-gold); background: rgba(201,148,58,0.10); }
+.trip-opt input { margin-top: 0.2rem; accent-color: var(--brick-red); }
+.trip-opt-main { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.trip-opt-line { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; line-height: 1.4; }
+.trip-opt-time { font-size: 0.7rem; opacity: 0.8; }
+.trip-opt-kg { font-size: 0.7rem; }
+.trip-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.trip-badge { font-size: 0.6rem; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--seafoam); color: var(--seafoam); }
+.trip-badge.suggested { background: var(--seafoam); color: #fff; }
+.trip-tag { font-size: 0.58rem; padding: 1px 5px; border-radius: 2px; border: 1px dashed var(--stamp-gold); color: var(--stamp-gold); white-space: nowrap; }
+.trip-tag.tag-verifyStation { border-color: var(--deep-orange); color: var(--deep-orange); }
+
+/* 計算方式與資料來源 */
+.trip-modal { position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.trip-modal-card { position: relative; width: 640px; max-width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel-bg); color: var(--text);
+    border: 2px solid var(--stamp-gold); border-radius: 8px; padding: 1.2rem 1.3rem; font-size: 0.78rem; line-height: 1.7; }
+.trip-modal-card h3 { font-family: 'Playfair Display', serif; color: var(--brick-red); margin-bottom: 0.5rem; padding-right: 2rem; }
+body.night .trip-modal-card h3 { color: var(--stamp-gold); }
+.trip-modal-card h4 { margin: 0.9rem 0 0.35rem; color: var(--seafoam); font-size: 0.8rem; }
+.trip-modal-card p { margin-bottom: 0.35rem; }
+.trip-modal-card ul { padding-left: 1.1rem; }
+.trip-modal-card a { color: var(--seafoam); }
+.trip-modal-close { position: absolute; top: 0.7rem; right: 0.7rem; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--beige);
+    background: transparent; color: var(--text); cursor: pointer; }
+.trip-table-wrap { overflow-x: auto; }
+.trip-modal-card table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+.trip-modal-card th, .trip-modal-card td { border-bottom: 1px solid var(--beige); padding: 0.3rem 0.4rem; text-align: left; vertical-align: top; }
+body.night .trip-modal-card th, body.night .trip-modal-card td { border-color: #54493f; }
+.trip-modal-card td:first-child, .trip-modal-card th:first-child { white-space: nowrap; }
+.trip-method-note { font-size: 0.66rem; opacity: 0.7; }
+
+/* 手機：面板改成底部整寬 */
+@media (max-width: 600px) {
+    #tripPanel { left: 8px; right: 8px; bottom: 20px; width: auto; max-width: none; max-height: 60%; }
+    .trip-modal-card { padding: 1rem; }
+}
