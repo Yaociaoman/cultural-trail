@@ -20,7 +20,7 @@
   },
   "stationModes": ["bus", "mrt", "train", "hsr"],
   "_stationReachKm": "TDX 模式：起訖兩端到最近車站的直線距離在此範圍內才視為可搭",
-  "stationReachKm": { "bus": 0.5, "mrt": 1.0, "train": 1.5, "hsr": 3.0 },
+  "stationReachKm": { "bus": 0.5, "mrt": 1.0, "train": 1.5, "hsr": 6.0 },
   "_mvpHiddenModes": "MVP 模式完全無法判斷有沒有站，所以不顯示",
   "mvpHiddenModes": ["mrt"],
   "suggestion": { "reasonableFactor": 1.5, "reasonableExtraMin": 20 },
