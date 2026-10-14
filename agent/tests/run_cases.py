@@ -51,8 +51,13 @@ async def run_case(case: dict) -> tuple[bool, list[str], dict, float]:
     reply = out["reply"]
     if case.get("expect_tools") and not set(case["expect_tools"]) & set(used):
         problems.append(f"沒有呼叫 {case['expect_tools']}（實際：{used}）")
-    if case.get("expect_lang") and detect_lang(reply) != case["expect_lang"]:
-        problems.append(f"語言應為 {case['expect_lang']}，偵測到 {detect_lang(reply)}")
+    # 地名本來就保留中文，判斷語言前先拿掉
+    names = [loc["name"] for i in out["locations"] if (loc := data.get_by_id(i))]
+    plain = reply
+    for n in sorted(names, key=len, reverse=True):
+        plain = plain.replace(n, " ")
+    if case.get("expect_lang") and detect_lang(plain) != case["expect_lang"]:
+        problems.append(f"語言應為 {case['expect_lang']}，偵測到 {detect_lang(plain)}")
     if case.get("expect_any") and not any(w in reply for w in case["expect_any"]):
         problems.append(f"回覆應包含其中之一：{case['expect_any']}")
     for w in case.get("expect_none", []):

@@ -1,5 +1,9 @@
 {
-  "_comment": "網站使用說明，整理自 index.html 的 CHAT_KB。純文字（可含簡單 Markdown），不可放 HTML。ja、de 於 Phase 6 補上。",
+  "_comment": "網站使用說明，整理自 index.html 的 CHAT_KB。純文字（可含簡單 Markdown），不可放 HTML。ja、de 為 Claude 起草，待會日文／德文的組員審閱（_review）。",
+  "_review": {
+    "ja": "待審閱",
+    "de": "待審閱"
+  },
   "zh-TW": {
     "usage": "Taiwan Cultural Trails 主要有三個功能：\n1. **Explore Map**：在地圖上瀏覽景點、餐廳與文創活動，可用左側欄搜尋與分類篩選。\n2. **Stamp Collection**：實際到現場拍照並上傳，就能解鎖該地點的集章。\n3. **AI Guide**：AI 導覽員，可以回答網站用法、幫你規劃行程。",
     "stamp": "解鎖集章的步驟：\n1. 到現場拍一張照片（請開啟相機的定位功能）。\n2. 進入 Stamp Collection，按「Choose Photo」上傳。\n3. 系統會讀取照片中的 GPS，若在地點 500 公尺內就自動解鎖。\n照片沒有 GPS 的話，可以手動選擇類別與地點。注意：部分通訊軟體傳送的照片會被移除 GPS 資訊。集章一定要旅客本人到場拍照，AI 導覽員無法代為解鎖。",
@@ -11,5 +15,17 @@
     "stamp": "How to unlock a stamp:\n1. Take a photo on site (turn on location tagging in your camera).\n2. Open Stamp Collection and tap \"Choose Photo\" to upload it.\n3. The site reads the photo's GPS data; if you were within 500 m of the location, the stamp unlocks automatically.\nIf the photo has no GPS data, you can choose the category and location manually. Note: some messaging apps strip GPS data from photos. You must visit in person to collect a stamp; the AI Guide cannot unlock stamps for you.",
     "badge": "Collect 3 stamps in a category to unlock its sustainability badge:\n- **Green Traveler**: cultural & creative activities (SDG 11)\n- **Sustainable Foodie**: restaurants (SDG 12)\n- **Heritage Explorer**: attractions (SDG 8.9)\nBadges appear on the Sustainable Culture Pass (a boarding-pass style card) above Stamp Collection, which you can export as an image.",
     "gps": "If your photo has no GPS data, a menu will appear so you can choose the category and location manually. Next time, turn on location tagging in your phone's camera settings. Photos sent through some messaging apps lose their GPS data, so upload the original photo."
+  },
+  "ja": {
+    "usage": "Taiwan Cultural Trails の主な機能は 3 つです：\n1. **Explore Map**：地図で観光地・レストラン・文化イベントを探せます。左のサイドバーで検索やカテゴリの絞り込みができます。\n2. **Stamp Collection**：現地で撮った写真をアップロードすると、その場所のスタンプがもらえます。\n3. **AI Guide**：AI ガイドがサイトの使い方を説明し、旅のプランづくりをお手伝いします。",
+    "stamp": "スタンプの集め方：\n1. 現地で写真を撮ります（カメラの位置情報をオンにしてください）。\n2. Stamp Collection を開き、「Choose Photo」でアップロードします。\n3. 写真の GPS 情報を読み取り、その場所から 500 m 以内ならスタンプが自動でもらえます。\n写真に GPS 情報がない場合は、カテゴリと場所を手動で選べます。注意：一部のメッセージアプリで送った写真は GPS 情報が消えます。スタンプは必ず本人が現地で撮影する必要があり、AI ガイドが代わりにスタンプを付けることはできません。",
+    "badge": "各カテゴリでスタンプを 3 つ集めると、サステナブルバッジがもらえます：\n- **Green Traveler**：文化・クリエイティブイベント（SDG 11）\n- **Sustainable Foodie**：レストラン（SDG 12）\n- **Heritage Explorer**：観光地（SDG 8.9）\nバッジは Stamp Collection 上部の「サステナブル文化パス」（搭乗券デザイン）に表示され、画像として保存できます。",
+    "gps": "写真に GPS 情報がない場合は、メニューが表示されるので、カテゴリと場所を手動で選んでスタンプを獲得できます。次回はスマートフォンのカメラ設定で「位置情報」をオンにしてください。また、一部のメッセージアプリで送った写真は GPS 情報が消えるため、元の写真をアップロードしてください。"
+  },
+  "de": {
+    "usage": "Taiwan Cultural Trails hat drei Hauptfunktionen:\n1. **Explore Map**: Sehenswürdigkeiten, Restaurants und Kultur- und Kreativveranstaltungen auf der Karte entdecken; in der Seitenleiste suchen und nach Kategorie filtern.\n2. **Stamp Collection**: Einen Ort besuchen, ein Foto hochladen und so den Stempel des Ortes freischalten.\n3. **AI Guide**: Ein KI-Reiseführer, der die Seite erklärt und bei der Reiseplanung hilft.",
+    "stamp": "So schaltest du einen Stempel frei:\n1. Mach vor Ort ein Foto (Standort in der Kamera aktivieren).\n2. Öffne Stamp Collection und lade das Foto mit „Choose Photo\" hoch.\n3. Die Seite liest die GPS-Daten des Fotos; warst du innerhalb von 500 m, wird der Stempel automatisch freigeschaltet.\nHat das Foto keine GPS-Daten, kannst du Kategorie und Ort manuell auswählen. Hinweis: Manche Messenger entfernen die GPS-Daten aus Fotos. Stempel gibt es nur bei einem persönlichen Besuch; der AI Guide kann keine Stempel für dich freischalten.",
+    "badge": "Sammle in einer Kategorie 3 Stempel, um das passende Nachhaltigkeitsabzeichen zu erhalten:\n- **Green Traveler**: Kultur- und Kreativveranstaltungen (SDG 11)\n- **Sustainable Foodie**: Restaurants (SDG 12)\n- **Heritage Explorer**: Sehenswürdigkeiten (SDG 8.9)\nDie Abzeichen erscheinen auf dem „Nachhaltigen Kulturpass\" (im Stil einer Bordkarte) über Stamp Collection und lassen sich als Bild exportieren.",
+    "gps": "Hat dein Foto keine GPS-Daten, erscheint ein Menü, in dem du Kategorie und Ort manuell auswählen kannst. Aktiviere beim nächsten Mal die Standortspeicherung in den Kameraeinstellungen deines Handys. Fotos, die über manche Messenger verschickt wurden, verlieren ihre GPS-Daten – lade daher das Originalfoto hoch."
   }
 }

@@ -30,7 +30,7 @@ KEYWORD_MAP = {
     "night market": "夜市", "old street": "老街", "hot spring": "溫泉", "temple": "廟", "museum": "博物館",
     "park": "公園", "beach": "海", "lake": "湖", "forest": "森林", "trail": "步道", "farm": "農場",
     "tea": "茶", "village": "村", "market": "市場", "mountain": "山",
-    "nachtmarkt": "夜市", "tempel": "廟", "strand": "海", "wald": "森林", "温泉": "溫泉",
+    "nachtmarkt": "夜市", "nachtmärkt": "夜市", "tempel": "廟", "strand": "海", "wald": "森林", "温泉": "溫泉",
 }
 CATEGORY_WORDS = {
     "restaurant": "restaurant", "餐廳": "restaurant", "美食": "restaurant", "小吃": "restaurant", "food": "restaurant",
@@ -41,6 +41,7 @@ STOP_WORDS = ["有哪些", "有什麼", "推薦", "哪裡", "什麼", "好玩", 
               "怎麼玩", "怎麼去", "可以去", "想去", "請問", "幫我", "安排", "介紹", "一下", "可以", "呢", "吧",
               "where", "what", "can", "find", "in", "the", "near", "我", "的", "嗎", "？", "?"]
 _SPLIT = re.compile(r"[\s,，、。!！]+")
+_KANA = re.compile(r"[\u3040-\u30ff]+")   # 日文假名：用來切出日文問句裡的漢字詞（例如「台中の夜市を」→「夜市」）
 
 
 def _city_aliases() -> list[tuple[str, str]]:
@@ -68,7 +69,13 @@ def parse_query(query: str) -> tuple[list[str], str | None, str | None]:
             q = q.replace(word, " ")
     for w in STOP_WORDS:
         q = re.sub(rf"\b{re.escape(w)}\b", " ", q) if w.isascii() and w.isalpha() else q.replace(w, " ")
-    terms += [t for t in _SPLIT.split(q) if t and not t.isascii()]  # 資料是中文，剩下的英文詞比對不到
+    for part in _SPLIT.split(q):
+        if not part or part.isascii():           # 資料是中文，剩下的英文詞比對不到
+            continue
+        if _KANA.search(part):                   # 日文：用假名切開，只留兩個字以上的漢字詞
+            terms += [p for p in _KANA.split(part) if len(p) >= 2]
+        else:
+            terms.append(part)
     return terms, city, category
 
 
@@ -119,7 +126,10 @@ def run(query: str = "", category: str | None = None, city: str | None = None, l
         attempts.append((terms, city, None, f"No {category} matched; results include all categories."))
     if city and terms:
         # 關鍵字比對不到，但有縣市：改列出該縣市的地點（沒有縣市時不放寬，避免亂推薦）
-        attempts.append(([], city, None, f"No exact match for {'、'.join(terms)}; these are other places in {city}."))
+        attempts.append(([], city, None,
+                         f"Nothing matched {'、'.join(terms)} in {city}. First tell the user honestly that no "
+                         f"{'、'.join(terms)} was found in the data; these results are only OTHER places in {city} "
+                         f"(do not call them {'、'.join(terms)})."))
 
     for used_terms, used_city, used_category, note in attempts:
         hits = _search(used_terms, used_city, used_category)

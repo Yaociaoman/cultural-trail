@@ -5,9 +5,11 @@ LANG_NAMES = {"zh-TW": "繁體中文", "en": "English", "ja": "日本語", "de":
 # 用使用者的語言再強調一次，小模型比較會遵守
 LANG_ORDERS = {
     "zh-TW": "請一律使用臺灣繁體中文回答，不可使用簡體字。",
-    "en": "Always answer in English.",
-    "ja": "必ず日本語で答えてください。",
-    "de": "Antworte immer auf Deutsch.",
+    "en": "Always answer in English. Write every place name exactly in Chinese characters as given by the tools "
+          "(e.g. 中華路夜市), never translate or romanize it.",
+    "ja": "必ず日本語で、短く（場所は 3 つまで）答えてください。地名はツールの結果どおりの中国語の正式名称（例：中華路夜市）をそのまま書き、翻訳しないでください。",
+    "de": "Antworte immer auf Deutsch und kurz (höchstens 3 Orte). Schreibe jeden Ortsnamen genau so in chinesischen Schriftzeichen wie in den "
+          "Werkzeug-Ergebnissen (z. B. 中華路夜市); niemals übersetzen oder umschreiben.",
 }
 
 # guard.py 用來偵測系統提示詞外洩的標記

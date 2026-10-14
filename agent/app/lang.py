@@ -18,5 +18,8 @@ def script_of(text: str) -> str:
 EXPECTED_SCRIPT = {"zh-TW": "zh", "ja": "ja", "en": "latin", "de": "latin"}
 
 
-def wrong_language(text: str, lang: str) -> bool:
+def wrong_language(text: str, lang: str, names: list[str] | None = None) -> bool:
+    """回覆語言是否不符。地名本來就該保留中文，所以先拿掉地名再判斷（避免英文回覆列了很多中文地名被誤判）。"""
+    for name in sorted(set(names or []), key=len, reverse=True):
+        text = text.replace(name, " ")
     return bool(text.strip()) and script_of(text) != EXPECTED_SCRIPT.get(lang, "zh")

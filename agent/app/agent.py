@@ -5,9 +5,9 @@ import logging
 import re
 import time
 
-from . import guard, ollama_client, tools
+from . import data, guard, ollama_client, tools
 from .lang import wrong_language
-from .prompt import LANG_NAMES, build_system_prompt
+from .prompt import LANG_ORDERS, build_system_prompt
 from .schemas import ChatRequest
 from .tools.plan_route import find_place_names
 from .tools.search_locations import parse_query
@@ -17,6 +17,10 @@ log = logging.getLogger("agent.loop")
 MAX_TOOL_ROUNDS = 5
 TOTAL_TIMEOUT = 45.0
 MAX_TOOL_CALLS_PER_ROUND = 4   # 避免模型一次塞一堆工具呼叫
+# 日文、德文：小模型常先用中文回答再翻譯，等於寫兩次；第一次回答短一點，兩次加起來才不會超過 45 秒
+SHORT_ANSWER_LANGS = {"ja", "de"}
+SHORT_ANSWER_TOKENS = 140
+REWRITE_MIN_SECONDS = 6         # 剩餘時間少於這個就不翻譯（寧可語言不完美，也不要逾時變成離線版）
 
 FORCE_ANSWER = {
     "zh-TW": "工具呼叫次數已達上限，請直接用目前查到的資料回答使用者。",
@@ -51,8 +55,9 @@ _SITE_TOPICS = [
     ("usage", re.compile(r"網站|怎麼用|如何使用|使用方式|how (do i|to) use|使い方|benutze", re.IGNORECASE)),
 ]
 
-REWRITE = ("Rewrite the following answer in {lang_name}. Keep every place name exactly as written "
-           "(official Chinese names). Do not add or remove information. Output only the rewritten answer.")
+# 翻譯指令放在 user 訊息、用中文寫並註明目標語言的中文名稱：實測 qwen2.5:3b 這樣才會真的翻（放 system 或用目標語言寫，常常原文照抄）
+REWRITE_TARGET = {"en": "英文（English）", "ja": "日文（日本語）", "de": "德文（Deutsch）", "zh-TW": "繁體中文"}
+REWRITE = "請把下面這段文字翻譯成{target}。[[P1]] 這類代號是地名，照抄，不要翻譯或刪除。不要增加或刪減內容。只輸出{target}翻譯。\n\n{text}"
 
 EMPTY_REPLY = {
     "zh-TW": "抱歉，我這次沒有整理出答案，可以換個方式再問一次嗎？",
@@ -129,8 +134,12 @@ async def _loop(req: ChatRequest, used_tools: list[str], found: dict) -> str:
         used_tools.append("auto")
         run_calls([auto_tool_call(last_user, ctx.lat if ctx else None, ctx.lng if ctx else None)])
 
+    # 非中文時，在模型開始回答前再提醒一次語言（工具結果都是中文，小模型容易跟著用中文回答）
+    lang_reminder = [] if req.lang == "zh-TW" else [{"role": "system", "content": LANG_ORDERS[req.lang]}]
+    max_tokens = SHORT_ANSWER_TOKENS if req.lang in SHORT_ANSWER_LANGS else None
+
     for _ in range(MAX_TOOL_ROUNDS):
-        msg = await ollama_client.chat(messages, tool_defs)
+        msg = await ollama_client.chat(messages + lang_reminder, tool_defs, max_tokens=max_tokens)
         calls = msg.get("tool_calls") or []
         if not calls:
             return msg.get("content", "")
@@ -138,24 +147,47 @@ async def _loop(req: ChatRequest, used_tools: list[str], found: dict) -> str:
 
     # 超過工具呼叫上限：不給工具，強制用現有資料回答
     messages.append({"role": "system", "content": FORCE_ANSWER.get(req.lang, FORCE_ANSWER["zh-TW"])})
-    msg = await ollama_client.chat(messages, None)
+    msg = await ollama_client.chat(messages, None, max_tokens=max_tokens)
     return msg.get("content", "")
 
 
-async def _fix_language(text: str, lang: str) -> str:
-    """回覆語言不對時，請模型翻譯一次（不給工具）。"""
-    msg = await ollama_client.chat([
-        {"role": "system", "content": REWRITE.format(lang_name=LANG_NAMES.get(lang, "繁體中文"))},
-        {"role": "user", "content": text},
-    ])
-    return msg.get("content", "") or text
+def protect_names(text: str, names: list[str]) -> tuple[str, dict[str, str]]:
+    """把地名換成 [[P1]] 這類代號，翻譯時地名才不會被模型翻掉（規格：地名保留正式中文名稱）。"""
+    tokens = {}
+    for name in sorted(set(names), key=len, reverse=True):   # 長的先換，避免短地名吃掉長地名的一部分
+        if name and name in text:
+            token = f"[[P{len(tokens) + 1}]]"
+            tokens[token] = name
+            text = text.replace(name, token)
+    return text, tokens
+
+
+def restore_names(text: str, tokens: dict[str, str]) -> str:
+    for token, name in tokens.items():
+        text = text.replace(token, name)
+    return re.sub(r"\[\[P\d+\]\]", "", text)   # 模型自己編出來的多餘代號直接移除
+
+
+async def _fix_language(text: str, lang: str, names: list[str]) -> str:
+    """回覆語言不對時，請模型翻譯一次（不給工具）；地名先換成代號保護起來。"""
+    protected, tokens = protect_names(text, names)
+    target = REWRITE_TARGET.get(lang, REWRITE_TARGET["zh-TW"])
+    msg = await ollama_client.chat([{"role": "user", "content": REWRITE.format(target=target, text=protected)}])
+    return restore_names(msg.get("content", "") or protected, tokens)
 
 
 async def _answer(req: ChatRequest, used_tools: list[str], found: dict) -> str:
+    started = time.monotonic()
     raw = await _loop(req, used_tools, found)
-    if wrong_language(raw, req.lang):
-        used_tools.append("rewrite_lang")
-        raw = await _fix_language(raw, req.lang)
+    time_left = TOTAL_TIMEOUT - (time.monotonic() - started)
+    names = [loc["name"] for i in dict.fromkeys(found["ids"]) if (loc := data.get_by_id(i))]
+    if wrong_language(raw, req.lang, names) and time_left >= REWRITE_MIN_SECONDS:
+        try:
+            # 只用剩下的時間翻譯；來不及就回傳原本的回答，不讓整個請求逾時
+            raw = await asyncio.wait_for(_fix_language(raw, req.lang, names), time_left - 1)
+            used_tools.append("rewrite_lang")
+        except (asyncio.TimeoutError, ollama_client.OllamaError):
+            used_tools.append("rewrite_skipped")
     return raw
 
 

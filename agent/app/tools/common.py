@@ -14,12 +14,12 @@ def clean(text: str, limit: int | None = None) -> str:
 
 
 def brief(loc: dict) -> dict:
-    """給模型看的精簡地點資訊（避免塞爆小模型的上下文）。"""
+    """給模型看的精簡地點資訊（避免塞爆小模型的上下文）。
+    不放地址：模型會照抄地址讓回答變長變慢，地址由前端的地點按鈕顯示；需要時用 get_location 查。"""
     return {
         "id": loc["id"],
         "name": loc["name"],
         "category": loc["cat"],
         "city": loc["city"],
-        "addr": clean(loc.get("addr", "")),
         "desc": clean(loc.get("desc", ""), DESC_MAX),
     }

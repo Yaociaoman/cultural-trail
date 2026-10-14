@@ -122,13 +122,16 @@ def test_site_help_lang_from_server():
     assert "500 公尺" in zh["text"] and "500 m" in en["text"]
 
 
-def test_site_help_falls_back_to_en():
-    r = run_tool("get_site_help", {"topic": "usage"}, {"lang": "de"})
-    assert r["lang"] in {"de", "en"}
+def test_site_help_all_languages():
+    for lang in ("zh-TW", "en", "ja", "de"):
+        for topic in ("usage", "stamp", "badge", "gps"):
+            r = run_tool("get_site_help", {"topic": topic}, {"lang": lang})
+            assert r["lang"] == lang and "<" not in r["text"]
+    assert "500 m" in run_tool("get_site_help", {"topic": "stamp"}, {"lang": "ja"})["text"]
 
 
 def test_site_help_has_no_html():
-    for lang in ("zh-TW", "en"):
+    for lang in ("zh-TW", "en", "ja", "de"):
         for topic in ("usage", "stamp", "badge", "gps"):
             assert "<" not in run_tool("get_site_help", {"topic": topic}, {"lang": lang})["text"]
 
@@ -205,3 +208,16 @@ def test_search_full_sentence_falls_back_to_city():
 def test_search_no_city_no_match_stays_empty():
     # 沒有縣市時不放寬，避免亂推薦
     assert run_tool("search_locations", {"query": "火星上的餐廳"})["count"] == 0
+
+
+def test_search_japanese_question():
+    r = run_tool("search_locations", {"query": "台北の夜市を教えてください"})
+    assert r["filters"]["city"] == "臺北市" and "夜市" in r["filters"]["keywords"]
+    assert ids(r) == ["A_TP_2"]
+
+
+def test_lang_detection_ignores_place_names():
+    from app.lang import wrong_language
+    text = "Here are some places:\n1. 大稻埕碼頭_大稻埕碼頭貨櫃市集\n2. 關渡_金色水岸_八里左岸自行車道\nEnjoy."
+    assert wrong_language(text, "en")   # 沒拿掉地名會誤判
+    assert not wrong_language(text, "en", ["大稻埕碼頭_大稻埕碼頭貨櫃市集", "關渡_金色水岸_八里左岸自行車道"])

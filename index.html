@@ -480,6 +480,9 @@
         .chat-input-row button:hover { background:var(--brick-light); }
         .chat-input-row button:disabled { opacity:0.5; cursor:default; }
         /* AI Guide：連線狀態、Agent 回覆、地點按鈕、路線摘要 */
+        .chat-lang { margin-left:auto; font-family:inherit; font-size:0.62rem; padding:2px 4px; border:1px solid rgba(245,240,232,0.4); border-radius:3px; background:transparent; color:var(--paper-white); cursor:pointer; }
+        .chat-lang option { color:#222; }
+        .chat-lang + .chat-demo-tag { margin-left:0.4rem; }
         .chat-demo-tag.online  { color:#7fd1b9; border-color:#7fd1b9; border-style:solid; }
         .chat-demo-tag.offline { color:rgba(245,240,232,0.6); border-color:rgba(245,240,232,0.4); }
         .chat-line + .chat-line { margin-top:0.25rem; }
@@ -676,9 +679,16 @@
         <div class="chat-head">
             <div class="chat-head-avatar">AI</div>
             <div>
-                <h2>Trail Guide · 在地嚮導</h2>
-                <small>詢問網站用法，或讓我幫你安排道地行程</small>
+                <h2 id="chatTitle">Trail Guide · 在地嚮導</h2>
+                <small id="chatSubtitle">詢問網站用法，或讓我幫你安排道地行程</small>
             </div>
+            <select class="chat-lang" id="chatLangSelect" aria-label="Language / 語言" onchange="setChatLang(this.value)">
+                <option value="auto">🌐 自動 Auto</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="de">Deutsch</option>
+            </select>
             <span class="chat-demo-tag" id="chatStatus" aria-live="polite">連線檢查中</span>
         </div>
         <div class="chat-messages" id="chatMessages"></div>
@@ -2022,22 +2032,34 @@ const CHAT_FALLBACK = {
 };
 
 const CHAT_TEXT = {
-    'zh-TW': { greeting: '嗨，{name}！我是你的在地嚮導 Trail Guide 🧭\n你可以問我網站怎麼用，或是想去哪裡玩，我來幫你安排行程。',
+    'zh-TW': { title: 'Trail Guide · 在地嚮導', subtitle: '詢問網站用法，或讓我幫你安排道地行程',
+               placeholder: '輸入問題，例如：台南一日遊怎麼玩？', send: '送出',
+               langChanged: '已切換為繁體中文，之後會用繁體中文回答。', langAuto: '已切換為自動：依你提問的語言回答。',
+               greeting: '嗨，{name}！我是你的在地嚮導 Trail Guide 🧭\n你可以問我網站怎麼用，或是想去哪裡玩，我來幫你安排行程。',
                traveler: '旅人', online: 'AI 連線中', offline: '離線模式', checking: '連線檢查中',
                thinking: 'AI 正在查資料，約需 10–30 秒…', offlineNote: 'AI 暫時無法連線，以下是離線版的回答。',
                error: '抱歉，目前無法回應，請稍後再試。', placeTitle: '在地圖上查看：',
                fileWarning: '⚠ 目前是直接開啟檔案（file://），AI 與地圖無法使用。請用本機伺服器開啟：http://127.0.0.1:5500' },
-    en: { greeting: "Hi {name}! I'm your local guide, Trail Guide 🧭\nAsk me how the site works or where to go, and I'll help plan your trip.",
+    en: { title: 'Trail Guide · Local Guide', subtitle: 'Ask how the site works, or let me plan a local trip for you',
+          placeholder: 'Ask something, e.g. a day trip in Tainan', send: 'Send',
+          langChanged: 'Switched to English. I will answer in English from now on.', langAuto: 'Auto mode: I will answer in the language you use.',
+          greeting: "Hi {name}! I'm your local guide, Trail Guide 🧭\nAsk me how the site works or where to go, and I'll help plan your trip.",
           traveler: 'traveler', online: 'AI online', offline: 'Offline mode', checking: 'Checking',
           thinking: 'The AI is looking things up — this takes about 10–30 seconds…', offlineNote: 'The AI is unavailable right now; this is the offline answer.',
           error: 'Sorry, something went wrong. Please try again later.', placeTitle: 'Show on map:',
           fileWarning: '⚠ This page was opened as a file (file://), so the AI and map cannot work. Open it via a local server: http://127.0.0.1:5500' },
-    ja: { greeting: 'こんにちは、{name}さん！ローカルガイドの Trail Guide です 🧭\nサイトの使い方や行きたい場所を聞いてください。旅のプランを考えます。',
+    ja: { title: 'Trail Guide · ローカルガイド', subtitle: 'サイトの使い方や、旅のプランづくりをお手伝いします',
+          placeholder: '質問を入力（例：台南の日帰り旅行）', send: '送信',
+          langChanged: '日本語に切り替えました。これからは日本語でお答えします。', langAuto: '自動モード：質問の言語でお答えします。',
+          greeting: 'こんにちは、{name}さん！ローカルガイドの Trail Guide です 🧭\nサイトの使い方や行きたい場所を聞いてください。旅のプランを考えます。',
           traveler: '旅人', online: 'AI 接続中', offline: 'オフライン', checking: '接続確認中',
           thinking: 'AI がデータを調べています（10〜30 秒ほど）…', offlineNote: 'AI に接続できないため、オフライン版の回答です。',
           error: '申し訳ありません。しばらくしてからもう一度お試しください。', placeTitle: '地図で見る：',
           fileWarning: '⚠ ファイルとして直接開いているため（file://）、AI と地図が使えません。ローカルサーバーで開いてください：http://127.0.0.1:5500' },
-    de: { greeting: 'Hallo {name}! Ich bin dein lokaler Guide, Trail Guide 🧭\nFrag mich, wie die Seite funktioniert oder wohin du reisen möchtest.',
+    de: { title: 'Trail Guide · Lokaler Guide', subtitle: 'Frag nach der Seite oder lass mich deine Reise planen',
+          placeholder: 'Frage eingeben, z. B. Tagesausflug Tainan', send: 'Senden',
+          langChanged: 'Auf Deutsch umgestellt. Ich antworte ab jetzt auf Deutsch.', langAuto: 'Automatisch: Ich antworte in der Sprache deiner Frage.',
+          greeting: 'Hallo {name}! Ich bin dein lokaler Guide, Trail Guide 🧭\nFrag mich, wie die Seite funktioniert oder wohin du reisen möchtest.',
           traveler: 'Reisende*r', online: 'KI online', offline: 'Offline-Modus', checking: 'Verbindung wird geprüft',
           thinking: 'Die KI sucht Daten – das dauert etwa 10–30 Sekunden…', offlineNote: 'Die KI ist gerade nicht erreichbar; dies ist die Offline-Antwort.',
           error: 'Entschuldigung, bitte versuche es später noch einmal.', placeTitle: 'Auf der Karte zeigen:',
@@ -2047,10 +2069,12 @@ const CHAT_TEXT = {
 let chatInited = false;
 let chatBusy = false;
 let agentOnline = false;
+let agentKnown = false;   // 第一次 /health 檢查完成前，狀態顯示「連線檢查中」
 let agentCheckedAt = 0;
 let chatHistory = [];   // 送給 Agent 的對話歷史（純文字）
 
-/* ── 語言：Phase 6 會加語言切換（存在 localStorage 的 tct_lang）；在那之前依問題的文字判斷 ── */
+/* ── 語言：聊天標頭可選語言（存在 localStorage 的 tct_lang，之後整站翻譯也可以共用）；
+      選「自動」時依提問的文字判斷 ── */
 function getSavedLang() {
     try {
         const v = localStorage.getItem('tct_lang');
@@ -2071,6 +2095,38 @@ function chatLang(text = '') {
     return getSavedLang() || (text ? detectLang(text) : 'zh-TW');
 }
 
+// 介面文字的語言：有選語言就用選的，自動模式用繁中
+function uiLang() {
+    return getSavedLang() || 'zh-TW';
+}
+
+function applyChatLangUI() {
+    const lang = uiLang();
+    const set = (id, prop, key) => { const el = document.getElementById(id); if (el) el[prop] = t(lang, key); };
+    set('chatTitle', 'textContent', 'title');
+    set('chatSubtitle', 'textContent', 'subtitle');
+    set('chatInput', 'placeholder', 'placeholder');
+    set('chatSend', 'textContent', 'send');
+    const sel = document.getElementById('chatLangSelect');
+    if (sel) sel.value = getSavedLang() || 'auto';
+    if (agentKnown) setAgentStatus(agentOnline);
+    else set('chatStatus', 'textContent', 'checking');
+}
+
+function setChatLang(value) {
+    try {
+        if (CHAT_LANGS.includes(value)) localStorage.setItem('tct_lang', value);
+        else localStorage.removeItem('tct_lang');
+    } catch { /* 無痕模式等情況存不了也沒關係 */ }
+    applyChatLangUI();
+    const lang = uiLang();
+    if (chatInited) {
+        const row = addChatMsg('bot', '', false);
+        renderSafeText(row.querySelector('.chat-bubble'), t(lang, getSavedLang() ? 'langChanged' : 'langAuto'));
+        setChatChips(DEFAULT_CHIPS_I18N[lang]);
+    }
+}
+
 function t(lang, key) {
     return (CHAT_TEXT[lang] || CHAT_TEXT['zh-TW'])[key];
 }
@@ -2086,11 +2142,12 @@ async function fetchWithTimeout(url, options, ms) {
     }
 }
 
-function setAgentStatus(online, lang = chatLang()) {
+function setAgentStatus(online) {
     agentOnline = online;
+    agentKnown = true;
     const el = document.getElementById('chatStatus');
     if (!el) return;
-    el.textContent = t(lang, online ? 'online' : 'offline');
+    el.textContent = t(uiLang(), online ? 'online' : 'offline');
     el.classList.toggle('online', online);
     el.classList.toggle('offline', !online);
 }
@@ -2177,7 +2234,7 @@ async function getReply(text) {
             return res;
         } catch (e) {
             console.warn('Agent unavailable, using offline replies:', e.message);
-            setAgentStatus(false, lang);
+            setAgentStatus(false);
             const res = offlineReply(text, lang);
             res.note = t(lang, 'offlineNote');
             return res;
@@ -2267,7 +2324,7 @@ function selectLocationById(id) {
 function initChat() {
     if (chatInited) return;
     chatInited = true;
-    const lang = chatLang();
+    const lang = uiLang();
     const name = document.getElementById('passport-name').textContent || t(lang, 'traveler');
     // 名稱是使用者輸入的：用安全方式顯示，不用 innerHTML
     const row = addChatMsg('bot', '', false);
@@ -2366,7 +2423,8 @@ async function sendChat(presetText) {
     }
 }
 
-// 頁面載入時就先檢查 Agent，聊天標頭立刻顯示連線狀態
+// 頁面載入時：套用上次選的語言，並檢查 Agent，聊天標頭立刻顯示連線狀態
+applyChatLangUI();
 checkAgent();
 
 /* ══════════════════════════════════════════════════

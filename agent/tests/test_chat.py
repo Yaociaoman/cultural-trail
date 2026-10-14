@@ -24,7 +24,7 @@ class FakeOllama:
         self.responses = list(responses)
         self.calls = []
 
-    async def __call__(self, messages, tools=None, timeout=40.0):
+    async def __call__(self, messages, tools=None, timeout=40.0, max_tokens=None):
         self.calls.append({"messages": [dict(m) for m in messages], "tools": tools})
         return self.responses.pop(0) if self.responses else {"content": "完成"}
 
@@ -255,6 +255,7 @@ def test_wrong_language_is_rewritten(client, monkeypatch):
     body = client.post("/chat", json={"messages": [{"role": "user", "content": "hello there"}], "lang": "en"}).json()
     assert body["reply"].startswith("Sorry")
     assert fake.calls[1]["tools"] is None and "English" in fake.calls[1]["messages"][0]["content"]
+    assert fake.calls[1]["messages"][0]["role"] == "user"
 
 
 def test_urls_and_links_removed():
@@ -337,3 +338,49 @@ def test_fix_doubled_last_char_and_keep_correct_names():
     assert guard.fix_list_names("1. 林百貨貨，昭和百貨", ids) == "1. 林百貨，昭和百貨"
     # 名稱完全正確時不會被「校正」成相似的其他地點
     assert guard.fix_list_names("1. 安平古堡：荷蘭城堡", ids) == "1. 安平古堡：荷蘭城堡"
+
+
+def test_place_names_protected_during_translation(client, monkeypatch):
+    # 模型先用中文回答 → 系統請它翻成英文；地名要用代號保護，翻譯後還原成中文正式名稱
+    fake = FakeOllama({"content": "推薦安平古堡和林百貨，都很值得一去。"},
+                      {"content": "I recommend [[P1]] and [[P2]], both worth a visit. [[P9]]"})
+    monkeypatch.setattr(ollama_client, "chat", fake)
+    body = ask(client, "Tainan attractions?", lang="en").json()
+    sent = fake.calls[1]["messages"][0]["content"]
+    assert "安平古堡" not in sent and "[[P" in sent          # 送去翻譯的是代號
+    assert "安平古堡" in body["reply"] and "林百貨" in body["reply"]
+    assert "[[P" not in body["reply"]                         # 多餘的代號被移除
+    assert set(body["locations"]) == {"A_TN_1", "A_TN_2"}     # 地名還在 → 地點按鈕會出現
+
+
+def test_skip_rewrite_when_time_is_short(client, monkeypatch):
+    fake = FakeOllama({"content": "推薦安平古堡。"}, {"content": "should not be used"})
+    monkeypatch.setattr(ollama_client, "chat", fake)
+    monkeypatch.setattr(agent, "TOTAL_TIMEOUT", 5.0)    # 剩餘時間 < 6 秒
+    body = ask(client, "hello", lang="en").json()
+    assert len(fake.calls) == 1 and body["reply"] == "推薦安平古堡。"
+
+
+def test_language_reminder_before_answer(client, monkeypatch):
+    fake = FakeOllama({"content": "安平古堡がおすすめです。"})
+    monkeypatch.setattr(ollama_client, "chat", fake)
+    ask(client, "台南には何がありますか？", lang="ja")
+    last = fake.calls[0]["messages"][-1]
+    assert last["role"] == "system" and "日本語" in last["content"]
+    # 中文不需要額外提醒
+    fake2 = FakeOllama({"content": "推薦安平古堡。"})
+    monkeypatch.setattr(ollama_client, "chat", fake2)
+    ask(client, "台南有什麼？")
+    assert fake2.calls[0]["messages"][-1]["role"] != "system"
+
+
+def test_short_answers_for_ja_de(client, monkeypatch):
+    seen = []
+
+    async def fake(messages, tools=None, timeout=40.0, max_tokens=None):
+        seen.append(max_tokens)
+        return {"content": "安平古堡がおすすめです。" if max_tokens else "推薦安平古堡。"}
+    monkeypatch.setattr(ollama_client, "chat", fake)
+    ask(client, "台南には何がありますか？", lang="ja")
+    ask(client, "台南有什麼？")
+    assert seen == [agent.SHORT_ANSWER_TOKENS, None]
