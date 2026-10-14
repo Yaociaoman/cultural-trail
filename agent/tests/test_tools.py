@@ -53,12 +53,18 @@ def test_search_category_filter():
 def test_search_not_found_gives_alternatives():
     r = run_tool("search_locations", {"query": "火星上的餐廳"})
     assert r["count"] == 0
-    assert "note" in r and r["available_cities"]
+    assert r["status"] == "not_found" and r["cities_with_data"]
+
+
+def test_search_relaxes_wrong_category():
+    # 模型用 restaurant 找溫泉 → 自動放寬類別
+    r = run_tool("search_locations", {"query": "溫泉", "city": "宜蘭縣", "category": "restaurant"})
+    assert ids(r) == ["A_YL_1"] and r["filters"]["category"] is None and "note" in r
 
 
 def test_search_unknown_city():
     r = run_tool("search_locations", {"query": "", "city": "火星市"})
-    assert r["count"] == 0 and "available_cities" in r
+    assert r["count"] == 0 and r["cities_with_data"]
 
 
 def test_search_limit_is_clamped():
@@ -178,3 +184,23 @@ def test_tools_are_read_only():
     assert names == {"search_locations", "get_location", "nearby_locations", "get_site_help"}
     for bad in ("stamp", "unlock", "redeem", "update", "delete", "write"):
         assert not any(bad in n for n in names)
+
+
+def test_lang_detection():
+    from app.lang import wrong_language
+    assert not wrong_language("推薦安平古堡", "zh-TW")
+    assert wrong_language("I recommend the castle", "zh-TW")
+    assert not wrong_language("I recommend 安平古堡 and 林百貨 in Tainan.", "en")   # 英文中夾中文地名可以
+    assert wrong_language("資料中找不到臺北市的夜市。", "en")
+    assert not wrong_language("安平古堡がおすすめです。", "ja")
+    assert wrong_language("推薦安平古堡", "ja")
+
+
+def test_search_full_sentence_falls_back_to_city():
+    r = run_tool("search_locations", {"query": "台南一日遊怎麼玩？"})
+    assert r["filters"]["city"] == "臺南市" and {"A_TN_1", "A_TN_2", "R_TN_1"} == set(ids(r))
+
+
+def test_search_no_city_no_match_stays_empty():
+    # 沒有縣市時不放寬，避免亂推薦
+    assert run_tool("search_locations", {"query": "火星上的餐廳"})["count"] == 0

@@ -19,7 +19,7 @@ SCHEMA = {
             "category": {"type": "string", "enum": ["attraction", "restaurant", "activity"],
                          "description": "attraction=景點、restaurant=餐廳、activity=文創活動；不限類別就不要填"},
             "city": {"type": "string", "description": "縣市名稱，例如「臺南」「宜蘭縣」「Taipei」"},
-            "limit": {"type": "integer", "description": "回傳筆數，預設 8，最多 15"},
+            "limit": {"type": "integer", "description": "回傳筆數，預設 6，最多 15"},
         },
         "required": ["query"],
     },
@@ -37,7 +37,8 @@ CATEGORY_WORDS = {
     "attraction": "attraction", "景點": "attraction", "activity": "activity", "event": "activity",
     "活動": "activity", "文創": "activity",
 }
-STOP_WORDS = ["有哪些", "有什麼", "推薦", "哪裡", "什麼", "好玩", "旅遊", "一日遊", "行程", "地點",
+STOP_WORDS = ["有哪些", "有什麼", "推薦", "哪裡", "什麼", "好玩", "旅遊", "一日遊", "二日遊", "兩天", "行程", "地點",
+              "怎麼玩", "怎麼去", "可以去", "想去", "請問", "幫我", "安排", "介紹", "一下", "可以", "呢", "吧",
               "where", "what", "can", "find", "in", "the", "near", "我", "的", "嗎", "？", "?"]
 _SPLIT = re.compile(r"[\s,，、。!！]+")
 
@@ -83,32 +84,52 @@ def _score(loc: dict, terms: list[str]) -> int:
     return s
 
 
-def run(query: str = "", category: str | None = None, city: str | None = None, limit: int = 8) -> dict:
+def _search(terms: list[str], city: str | None, category: str | None) -> list[dict]:
+    pool = [x for x in data.get_locations()
+            if (not category or x["cat"] == category) and (not city or x["city"] == city)]
+    if not terms:
+        return pool
+    scored = [(s, x) for x in pool if (s := _score(x, terms)) > 0]
+    scored.sort(key=lambda sx: (-sx[0], sx[1]["name"]))
+    return [x for _, x in scored]
+
+
+def not_found(reason: str) -> dict:
+    # 提示用簡短英文：中文提示會讓英文／日文／德文的回覆被帶成中文
+    return {"count": 0, "results": [], "status": "not_found",
+            "note": f"{reason} Tell the user honestly that the data has no match. Do not invent places.",
+            "cities_with_data": list(data.available_cities())[:6]}
+
+
+def run(query: str = "", category: str | None = None, city: str | None = None, limit: int = 6) -> dict:
     terms, q_city, q_category = parse_query(query)
     category = category or q_category
 
     if city:
-        city_name = data.match_city(city) or parse_query(city)[1]
-        if not city_name:
-            return {"count": 0, "results": [], "note": f"資料中找不到縣市「{city}」",
-                    "available_cities": data.available_cities()}
+        city = data.match_city(city) or parse_query(city)[1]
+        if not city:
+            return not_found("Unknown city.")
     else:
-        city_name = q_city
+        city = q_city
 
-    pool = [x for x in data.get_locations()
-            if (not category or x["cat"] == category) and (not city_name or x["city"] == city_name)]
+    # 依序放寬條件，直到找到結果；note 告訴模型放寬了什麼
+    attempts = [(terms, city, category, None)]
+    if category:
+        # 小模型常加錯類別（例如用 restaurant 找溫泉）
+        attempts.append((terms, city, None, f"No {category} matched; results include all categories."))
+    if city and terms:
+        # 關鍵字比對不到，但有縣市：改列出該縣市的地點（沒有縣市時不放寬，避免亂推薦）
+        attempts.append(([], city, None, f"No exact match for {'、'.join(terms)}; these are other places in {city}."))
 
-    if terms:
-        scored = [(s, x) for x in pool if (s := _score(x, terms)) > 0]
-        scored.sort(key=lambda sx: (-sx[0], sx[1]["name"]))
-        hits = [x for _, x in scored]
-    else:
-        hits = pool
+    for used_terms, used_city, used_category, note in attempts:
+        hits = _search(used_terms, used_city, used_category)
+        if hits:
+            out = {"count": min(len(hits), limit), "total_matches": len(hits),
+                   "filters": {"city": used_city, "category": used_category, "keywords": used_terms},
+                   "results": [brief(x) for x in hits[:limit]]}
+            if note:
+                out["note"] = note
+            return out
 
-    results = [brief(x) for x in hits[:limit]]
-    out = {"count": len(results), "total_matches": len(hits),
-           "filters": {"city": city_name, "category": category, "keywords": terms}, "results": results}
-    if not results:
-        out["note"] = "資料中找不到符合的地點，請如實告知使用者，並可從 available_cities 提供替代建議"
-        out["available_cities"] = data.available_cities()
-    return out
+    where = f" in {city}" if city else ""
+    return not_found(f"No places{where} match {'、'.join(terms) or 'the query'}.")

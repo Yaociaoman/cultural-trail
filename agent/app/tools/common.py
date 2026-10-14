@@ -1,7 +1,7 @@
 """工具共用：輸出精簡化。"""
 import re
 
-DESC_MAX = 80
+DESC_MAX = 60   # 小模型讀長結果很慢（M1 約每 1000 token 多 10 秒）
 _CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 
 

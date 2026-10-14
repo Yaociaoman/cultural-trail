@@ -17,14 +17,14 @@ SCHEMA = {
             "radius_m": {"type": "integer", "description": "搜尋半徑（公尺），預設 3000，最多 20000"},
             "category": {"type": "string", "enum": ["attraction", "restaurant", "activity"],
                          "description": "attraction=景點、restaurant=餐廳、activity=文創活動；不限就不要填"},
-            "limit": {"type": "integer", "description": "回傳筆數，預設 8，最多 15"},
+            "limit": {"type": "integer", "description": "回傳筆數，預設 6，最多 15"},
         },
         "required": ["lat", "lng"],
     },
 }
 
 
-def run(lat: float, lng: float, radius_m: int = 3000, category: str | None = None, limit: int = 8) -> dict:
+def run(lat: float, lng: float, radius_m: int = 3000, category: str | None = None, limit: int = 6) -> dict:
     found = []
     for x in data.get_locations():
         if category and x["cat"] != category:
@@ -36,5 +36,6 @@ def run(lat: float, lng: float, radius_m: int = 3000, category: str | None = Non
     results = [{**brief(x), "distance_m": round(d)} for d, x in found[:limit]]
     out = {"count": len(results), "radius_m": radius_m, "results": results}
     if not results:
-        out["note"] = f"半徑 {radius_m} 公尺內的資料中找不到地點，可以建議擴大範圍"
+        out["status"] = "not_found"
+        out["note"] = f"No places within {radius_m} m. Suggest a larger radius. Do not invent places."
     return out
