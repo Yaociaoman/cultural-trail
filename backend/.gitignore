@@ -1,0 +1,5 @@
+.env
+data/*.sqlite*
+uploads/*
+!uploads/.gitkeep
+node_modules/
