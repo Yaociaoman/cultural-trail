@@ -115,7 +115,7 @@ app.get('/api/locations', asyncRoute(async (_req, res) => {
 }));
 
 app.get('/api/stamps', requireUser, (req, res) => {
-  const stamps = db.prepare('SELECT id,location_id AS locationId,captured_at AS capturedAt,distance_m AS distanceM,created_at AS createdAt FROM stamps WHERE user_id=? ORDER BY created_at DESC').all(req.user.id)
+  const stamps = db.prepare('SELECT id,location_id AS locationId,captured_at AS capturedAt,distance_m AS distanceM,verification_method AS verificationMethod,created_at AS createdAt FROM stamps WHERE user_id=? ORDER BY created_at DESC').all(req.user.id)
     .map(stamp => ({ ...stamp, photoUrl: `/api/stamps/${encodeURIComponent(stamp.locationId)}/photo` }));
   res.json({ stamps });
 });
@@ -130,20 +130,55 @@ app.post('/api/stamps', requireUser, upload.single('photo'), asyncRoute(async (r
       ? 'heif' : signature.toString('ascii', 1, 4) === 'PNG'
         ? 'png' : signature.toString('ascii', 8, 12) === 'WEBP' ? 'webp' : null;
   if (!detected) return res.status(415).json({ error: 'INVALID_IMAGE', message: 'The uploaded file is not a supported image.' });
+  const manual = req.body.manual === 'true';
   let metadata;
-  try { metadata = await exifr.parse(file.buffer, { gps: true, exif: true, tiff: true }); }
-  catch { return res.status(422).json({ error: 'INVALID_EXIF', message: 'Could not read photo metadata.' }); }
-  if (!gpsIsValid(metadata)) {
-    return res.status(422).json({ error: 'GPS_REQUIRED', message: 'This photo has no readable GPS location. Choose the original photo with location metadata enabled.' });
+  try { metadata = await exifr.parse(file.buffer, { gps: true, exif: true, tiff: true }) || {}; }
+  catch {
+    if (!manual) return res.status(422).json({ error: 'INVALID_EXIF', message: 'Could not read photo metadata.' });
+    metadata = {};
   }
   const capturedAt = metadata.DateTimeOriginal || metadata.CreateDate || metadata.ModifyDate;
-  if (!capturedAt || !photoTimeIsValid(capturedAt, Date.now(), maxAgeHours)) return res.status(422).json({ error: 'PHOTO_TIME_INVALID', message: `The photo must have been taken within the last ${maxAgeHours} hours.` });
+  const captureTimeValid = Boolean(capturedAt) && photoTimeIsValid(capturedAt, Date.now(), maxAgeHours);
+  if ((!manual && !captureTimeValid) || (manual && capturedAt && !captureTimeValid)) {
+    return res.status(422).json({ error: 'PHOTO_TIME_INVALID', message: `The photo must have been taken within the last ${maxAgeHours} hours.` });
+  }
+  // Manual submissions without readable capture time record upload time; the actual photo time cannot be verified.
+  const recordedCapturedAt = capturedAt ? new Date(capturedAt).toISOString() : new Date().toISOString();
 
   const locations = JSON.parse(await fs.readFile(locationsFile, 'utf8'));
-  const matches = locations.map(loc => ({ loc, distance: haversineMeters(metadata.latitude, metadata.longitude, loc.lat, loc.lng) }))
-    .filter(match => match.distance <= radiusMeters).sort((a, b) => a.distance - b.distance);
-  if (!matches.length) return res.status(422).json({ error: 'LOCATION_TOO_FAR', message: `No trail location is within ${radiusMeters} metres of the photo.` });
-  const { loc, distance } = matches[0];
+  let loc;
+  let distance;
+  let latitude;
+  let longitude;
+  let verificationMethod = 'gps';
+
+  if (manual) {
+    const locationId = String(req.body.locationId || '');
+    loc = locations.find(item => item.id === locationId);
+    if (!loc) return res.status(400).json({ error: 'INVALID_LOCATION', message: 'Choose a valid trail location for manual stamping.' });
+    verificationMethod = 'manual';
+    if (gpsIsValid(metadata)) {
+      latitude = metadata.latitude;
+      longitude = metadata.longitude;
+      distance = haversineMeters(latitude, longitude, loc.lat, loc.lng);
+    } else {
+      // The selected location is stored as a placeholder coordinate; the method marks it unverified.
+      latitude = loc.lat;
+      longitude = loc.lng;
+      distance = 0;
+    }
+  } else {
+    if (!gpsIsValid(metadata)) {
+      return res.status(422).json({ error: 'GPS_REQUIRED', message: 'This photo has no readable GPS location. You can choose the location manually.' });
+    }
+    const matches = locations.map(item => ({ loc: item, distance: haversineMeters(metadata.latitude, metadata.longitude, item.lat, item.lng) }))
+      .filter(match => match.distance <= radiusMeters).sort((a, b) => a.distance - b.distance);
+    if (!matches.length) return res.status(422).json({ error: 'LOCATION_TOO_FAR', message: `No trail location is within ${radiusMeters} metres of the photo. You can choose the location manually.` });
+    ({ loc, distance } = matches[0]);
+    latitude = metadata.latitude;
+    longitude = metadata.longitude;
+  }
+
   const photoHash = hash(file.buffer);
   if (db.prepare('SELECT 1 FROM stamps WHERE user_id=? AND location_id=?').get(req.user.id, loc.id)) return res.status(409).json({ error: 'STAMP_EXISTS', message: 'You already collected this location’s stamp.' });
   if (db.prepare('SELECT 1 FROM stamps WHERE user_id=? AND photo_sha256=?').get(req.user.id, photoHash)) return res.status(409).json({ error: 'PHOTO_DUPLICATE', message: 'This photo has already been used.' });
@@ -155,8 +190,8 @@ app.post('/api/stamps', requireUser, upload.single('photo'), asyncRoute(async (r
   const stampId = crypto.randomUUID();
   try {
     transaction(() => {
-      db.prepare('INSERT INTO stamps(id,user_id,location_id,photo_path,photo_sha256,captured_at,latitude,longitude,distance_m) VALUES(?,?,?,?,?,?,?,?,?)')
-        .run(stampId, req.user.id, loc.id, photoName, photoHash, new Date(capturedAt).toISOString(), metadata.latitude, metadata.longitude, distance);
+      db.prepare('INSERT INTO stamps(id,user_id,location_id,photo_path,photo_sha256,captured_at,latitude,longitude,distance_m,verification_method) VALUES(?,?,?,?,?,?,?,?,?,?)')
+        .run(stampId, req.user.id, loc.id, photoName, photoHash, recordedCapturedAt, latitude, longitude, distance, verificationMethod);
       db.prepare('INSERT INTO point_ledger(id,user_id,amount,reason,reference_id) VALUES(?,?,?,?,?)')
         .run(crypto.randomUUID(), req.user.id, pointsPerStamp, 'stamp', loc.id);
       db.prepare('UPDATE users SET points=points+? WHERE id=?').run(pointsPerStamp, req.user.id);
@@ -166,7 +201,7 @@ app.post('/api/stamps', requireUser, upload.single('photo'), asyncRoute(async (r
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') return res.status(409).json({ error: 'DUPLICATE_STAMP', message: 'This location or photo has already been used.' });
     throw error;
   }
-  res.status(201).json({ stamp: { id: stampId, locationId: loc.id, locationName: loc.name, distanceM: Math.round(distance), capturedAt: new Date(capturedAt).toISOString(), photoUrl: `/api/stamps/${encodeURIComponent(loc.id)}/photo` }, points: req.user.points + pointsPerStamp });
+  res.status(201).json({ stamp: { id: stampId, locationId: loc.id, locationName: loc.name, distanceM: Math.round(distance), verificationMethod, capturedAt: recordedCapturedAt, photoUrl: `/api/stamps/${encodeURIComponent(loc.id)}/photo` }, points: req.user.points + pointsPerStamp });
 }));
 
 app.get('/api/stamps/:locationId/photo', requireUser, (req, res) => {

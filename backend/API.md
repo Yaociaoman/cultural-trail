@@ -19,10 +19,10 @@ Passwords must be 10–128 characters. Usernames must be 1–20 characters. Pass
 |---|---|---|---|
 | `GET` | `/api/locations` | — | Existing `data/locations.json` |
 | `GET` | `/api/stamps` | authenticated | `{ stamps: [{ id, locationId, capturedAt, distanceM, createdAt, photoUrl }] }` |
-| `POST` | `/api/stamps` | authenticated multipart form field `photo` | `201 { stamp, points }` |
+| `POST` | `/api/stamps` | authenticated multipart form field `photo`; optional manual fields `manual=true` and `locationId` | `201 { stamp, points }` |
 | `GET` | `/api/stamps/:locationId/photo` | authenticated | User-owned image bytes |
 
-The server checks file type and size, reads EXIF on the server (JPEG/PNG/WebP/HEIC/HEIF), requires GPS and a recent capture time, then compares coordinates against the existing locations JSON. Defaults: at most 10 MiB, within 500 metres, and taken within the last 48 hours. One stamp per user and location; one use per identical photo hash per user. Adjust these defaults in `.env` for the team's agreed policy. Images are stored outside public static access with randomized names; image reads require the owning session.
+The server checks file type and size and reads EXIF on the server (JPEG/PNG/WebP/HEIC/HEIF). Automatic stamping requires GPS within 500 metres and a capture time within the last 48 hours. If GPS is missing or outside the range, the user may select a location and submit `manual=true` plus its `locationId`; this immediately awards the stamp and points without GPS verification. Manual submissions are recorded with `verificationMethod: "manual"`; the user must select a place they actually visited. One stamp per user and location; one use per identical photo hash per user. Adjust upload and age defaults in `.env` for the team's agreed policy. Images are stored outside public static access with randomized names; image reads require the owning session.
 
 ## Points and rewards
 
