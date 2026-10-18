@@ -40,6 +40,8 @@ INSERT INTO rewards(id,name,description,cost,stock)
 VALUES ('local-market-coupon','在地市集折價券','請於合作店家出示此兌換紀錄',100,50);
 ```
 
+For demos, `npm run seed:rewards` inserts six placeholder rewards (`demo-*`, names marked 【示意】) from `src/seed-rewards.js`. Re-running updates their text and cost but keeps the current stock.
+
 ## Security and deployment notes
 
 - The API accepts same-origin browser requests; cross-origin `Origin` values are rejected. Keep HTTPS enabled in production (`NODE_ENV=production`) so the session cookie is marked `Secure`.
