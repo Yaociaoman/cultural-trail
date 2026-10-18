@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS stamps (
   latitude REAL NOT NULL,
   longitude REAL NOT NULL,
   distance_m REAL NOT NULL,
+  verification_method TEXT NOT NULL DEFAULT 'gps',
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   UNIQUE(user_id, location_id),
   UNIQUE(user_id, photo_sha256)
@@ -73,5 +74,11 @@ CREATE TABLE IF NOT EXISTS redemptions (
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 `);
+
+// Existing local databases need an additive migration for manual submissions.
+const stampColumns = new Set(db.pragma('table_info(stamps)').map(column => column.name));
+if (!stampColumns.has('verification_method')) {
+  db.exec("ALTER TABLE stamps ADD COLUMN verification_method TEXT NOT NULL DEFAULT 'gps'");
+}
 
 export function transaction(fn) { return db.transaction(fn)(); }
